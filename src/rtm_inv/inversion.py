@@ -164,7 +164,7 @@ if __name__ == '__main__':
         img=s2_spectra,
         mask=mask,
         cost_function='rmse',
-        n_solutions=5,
+        n_solutions=200,
     )
     trait_img = retrieve_traits(
         lut=s2_lut,
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         band_name='LAI',
         values=trait_img[0,:,:]
     )
-    fpath_out = Path('/mnt/ides/Lukas/03_Debug/LUT/20190530_T32TMT_MSIL2A_S2A_LAI-ProSAIL.tif')
+    fpath_out = Path('/mnt/ides/Lukas/03_Debug/LUT/20190530_T32TMT_MSIL2A_S2A_LAI-ProSAIL-rmse-200solutions.tif')
     collection.to_rasterio(fpath_raster=fpath_out)
 
     
