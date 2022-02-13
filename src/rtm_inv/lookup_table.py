@@ -10,6 +10,8 @@ import lhsmdu
 import numpy as np
 import pandas as pd
 
+from typing import Union
+
 from rtm_inv._distributions import Distributions
 
 sampling_methods: List[str] = ['LHS']
@@ -26,17 +28,21 @@ class LookupTable(object):
     """
     def __init__(
             self,
-            params_csv: Path
+            params: Union[Path,pd.DataFrame]
         ):
         """
         creates a new ``Lookup Table`` instance
 
-        :param params_csv:
+        :param params:
             csv file with RTM parameters (traits), their min and max
             value and selected distribution
         """
-        self.params_csv = params_csv
-        self._params_df = pd.read_csv(self.params_csv)
+        if isinstance(params, Path):
+            self._params_df = pd.read_csv(self.params_csv)
+        elif isinstance(params, pd.DataFrame):
+            self._params_df = params.copy()
+        else:
+            raise TypeError('Expected Path-object or DataFrame')
         self.samples = None
 
     @property
@@ -90,7 +96,7 @@ class LookupTable(object):
         # determine traits to sample (indicated by a distribution different from
         # "Constant"
         traits = self._params_df[
-            self._params_df['Distribution'].isin(Distributions._distributions)
+            self._params_df['Distribution'].isin(Distributions.distributions)
         ]
         trait_names = traits['Parameter'].to_list()
         traits = traits.transpose()

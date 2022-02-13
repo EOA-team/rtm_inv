@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from numba import jit
-from typing import List, Optional
+from typing import List
 
 
 @jit(nopython=True)
