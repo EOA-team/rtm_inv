@@ -6,11 +6,11 @@ and an image matrix of remotely sensed spectra.
 import numpy as np
 import pandas as pd
 
-from numba import jit, prange
+from numba import njit, prange
 from typing import List
 
 
-@jit(nopython=True, parallel=True, nogil=True, cache=True)
+@njit(parallel=True, cache=True)
 def inv_img(
         lut: np.ndarray,
         img: np.ndarray,
@@ -45,20 +45,17 @@ def inv_img(
         where for each pixel the `n_solutions` best solutions are returned
         as row indices in the `lut`.
     """
-
     output_shape = (n_solutions, img.shape[1], img.shape[2])
     lut_idxs = np.zeros(shape=output_shape, dtype='uint32')
 
     for row in prange(img.shape[1]):
         for col in range(img.shape[2]):
-
             # skip masked pixels
             if mask[row, col]:
                 continue
             # get sensor spectrum (single pixel)
             image_ref = img[:,row,col]
             image_ref_normalized = np.sum(np.abs(image_ref - (np.mean(image_ref))))
-
             # cost functions (from EnMap box) implemented in a
             # way Numba can handle them (cannot use keywords in numpy functions)
             delta = np.zeros(shape=(lut.shape[0],), dtype='float64')
@@ -70,7 +67,6 @@ def inv_img(
                 elif cost_function == 'mNSE':
                     delta[idx] = 1.0 - \
                         ((np.sum(np.abs(image_ref - lut[idx,:]))) / image_ref_normalized)
-
             # find the smallest errors between simulated and observed spectra
             # we need the row index of the corresponding entries in the LUT
             delta_sorted = np.argsort(delta)
@@ -80,18 +76,27 @@ def inv_img(
 
     return lut_idxs
 
-@jit(nopython=True, cache=True, parallel=True)
+@njit(cache=True, parallel=True)
 def _retrieve_traits(
         trait_values: np.ndarray,
         lut_idx: np.ndarray,
     ):
-    n_traits = trait_values.shape[1]
+    """
+    Uses the indices of the best matching spectra to retrieve the
+    corresponding trait values from the LUT
 
+    :param trait_values:
+        array with traits entries in the LUT
+    :param lut_idx:
+        indices of the best matching entries in the LUT
+    :returns:
+        3-d image with trait values with shape (n_traits, nrows, ncols)
+    """
+    n_traits = trait_values.shape[1]
     _, rows, cols = lut_idx.shape
     # allocate array for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
     trait_img = np.zeros(trait_img_shape, dtype='float64')
-
     # loop over pixels and write inversion result to trait_img
     for trait in range(n_traits):
         for row in prange(rows):
@@ -126,6 +131,5 @@ def retrieve_traits(
         ``np.ndarray`` of shape `(len(traits), rows, cols)`
         where rows and columns are given by the shape of lut_idx
     """
-
     trait_values = lut[traits].values
     return _retrieve_traits(trait_values, lut_idx)

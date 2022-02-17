@@ -91,4 +91,6 @@ if __name__ == '__main__':
         fpath_out = msil2a_scenes_dir.joinpath(out_dir_vis).joinpath('Vegetation_Indices').joinpath(fname_lai)
         collection.to_rasterio(fpath_raster=fpath_out)
         logger.info(f'Wrote LAI product to file: {fpath_out}')
+        # debug
+        break
     
