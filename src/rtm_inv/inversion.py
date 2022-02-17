@@ -6,11 +6,11 @@ and an image matrix of remotely sensed spectra.
 import numpy as np
 import pandas as pd
 
-from numba import jit
+from numba import jit, prange
 from typing import List
 
 
-@jit(nopython=True, parallel=True)
+@jit(nopython=True, parallel=True, nogil=True, cache=True)
 def inv_img(
         lut: np.ndarray,
         img: np.ndarray,
@@ -49,7 +49,7 @@ def inv_img(
     output_shape = (n_solutions, img.shape[1], img.shape[2])
     lut_idxs = np.zeros(shape=output_shape, dtype='uint32')
 
-    for row in range(img.shape[1]):
+    for row in prange(img.shape[1]):
         for col in range(img.shape[2]):
 
             # skip masked pixels
@@ -80,7 +80,7 @@ def inv_img(
 
     return lut_idxs
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True, parallel=True)
 def _retrieve_traits(
         trait_values: np.ndarray,
         lut_idx: np.ndarray,
@@ -94,7 +94,7 @@ def _retrieve_traits(
 
     # loop over pixels and write inversion result to trait_img
     for trait in range(n_traits):
-        for row in range(rows):
+        for row in prange(rows):
             for col in range(cols):
                 trait_img[trait,row,col] = \
                     np.median(trait_values[lut_idx[:,row,col],trait])
