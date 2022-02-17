@@ -10,7 +10,7 @@ from numba import jit
 from typing import List
 
 
-@jit(nopython=True)
+@jit(nopython=True, parallel=True)
 def inv_img(
         lut: np.ndarray,
         img: np.ndarray,
@@ -129,56 +129,3 @@ def retrieve_traits(
 
     trait_values = lut[traits].values
     return _retrieve_traits(trait_values, lut_idx)
-    
-if __name__ == '__main__':
-
-    from pathlib import Path
-    from agrisatpy.core.band import Band
-    from agrisatpy.core.raster import RasterCollection
-
-    s2_lut = pd.read_csv('../../parameters/s2_prosail_demo.csv')
-    s2_lut = s2_lut.dropna()
-
-    traits = ['lai']
-
-    fpath_raster = Path('/mnt/ides/Lukas/software/AgriSatPy/data/20190530_T32TMT_MSIL2A_S2A_pixel_division_10m.tiff')
-    s2_data = RasterCollection.from_multi_band_raster(
-        fpath_raster=fpath_raster
-    )
-    s2_bands = s2_data.band_names
-
-    # synthetic spectra
-    s2_lut_spectra = s2_lut[s2_bands].values
-    s2_spectra = s2_data.get_values().astype(s2_lut_spectra.dtype)
-    s2_spectra *= 0.0001
-
-    # define mask so that all pixels are processed (i.e., no masking)
-    mask = np.zeros(
-        shape=(s2_spectra.shape[1], s2_spectra.shape[2]),
-        dtype='uint8'
-    )
-    mask = mask.astype(bool)
-
-    lut_idx = inv_img(
-        lut=s2_lut_spectra,
-        img=s2_spectra,
-        mask=mask,
-        cost_function='rmse',
-        n_solutions=200,
-    )
-    trait_img = retrieve_traits(
-        lut=s2_lut,
-        lut_idx=lut_idx,
-        traits=traits
-    )
-
-    collection = RasterCollection(
-        Band,
-        geo_info=s2_data['B02'].geo_info,
-        band_name='LAI',
-        values=trait_img[0,:,:]
-    )
-    fpath_out = Path('/mnt/ides/Lukas/03_Debug/LUT/20190530_T32TMT_MSIL2A_S2A_LAI-ProSAIL-rmse-200solutions.tif')
-    collection.to_rasterio(fpath_raster=fpath_out)
-
-    

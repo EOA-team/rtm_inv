@@ -138,7 +138,7 @@ class RTM:
                 print(e)
             if (idx+1)%self._nstep == 0:
                 print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
-                continue
+
             # resample to spectral resolution of sensor
             sensor_spectrum = resampler(spectrum)
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
