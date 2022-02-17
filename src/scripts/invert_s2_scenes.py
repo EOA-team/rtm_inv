@@ -1,7 +1,10 @@
 '''
-Created on Feb 17, 2022
+Lookup-table based inversion of Sentinel-2 scenes (original S2 scenes in L2A processing
+level, no uncertainty applied).
 
-@author: graflu
+The inversion strategy is based on the median value of the 100 best performing solutions
+in terms of the minimum root mean squared error (RMSE) between observed and simulated
+spectra.
 '''
 
 import numpy as np
@@ -84,13 +87,11 @@ if __name__ == '__main__':
             values=trait_img[0,:,:]
         )
         out_dir_vis = scene.name.replace('.SAFE', '.VIs')
-        date = scene.name.split('_')[6][0:8]
+        date = scene.name.split('_')[2][0:8]
         tile = scene.name.split('_')[5]
         sensor = scene.name.split('_')[0]
         fname_lai = f'VI_{date}_{tile}_MSIL2A_{sensor}_None_10m_GLAI.tif'
         fpath_out = msil2a_scenes_dir.joinpath(out_dir_vis).joinpath('Vegetation_Indices').joinpath(fname_lai)
         collection.to_rasterio(fpath_raster=fpath_out)
         logger.info(f'Wrote LAI product to file: {fpath_out}')
-        # debug
-        break
     
