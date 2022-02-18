@@ -66,7 +66,7 @@ if __name__ == '__main__':
             mask = mask.as_type('bool')
 
         logger.info(f'Starting inversion of {scene.name}')
-        lut_idx = inv_img(
+        lut_idxs = inv_img(
             lut=s2_lut_spectra,
             img=s2_spectra,
             mask=mask,
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         )
         trait_img = retrieve_traits(
             lut=s2_lut,
-            lut_idx=lut_idx,
+            lut_idxs=lut_idxs,
             traits=traits
         )
         logger.info(f'Finished inversion of {scene.name}')
