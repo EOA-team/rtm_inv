@@ -102,6 +102,8 @@ def extract_data(
         clean_pix_gdf['date'] = pd.to_datetime(clean_pix_gdf['date'])
         df_list.append(clean_pix_gdf)
 
+        print(f'Extracted scene {scene.name}')
+
     # concat dataframe, clean it and save it to csv
     complete_gdf = pd.concat(df_list)
     complete_gdf['x'] = complete_gdf.geometry.x
@@ -117,6 +119,7 @@ if __name__ == '__main__':
     lai_dir = Path('/home/graflu/Documents/uncertainty/S2_MSIL1C_orig')
     output_fname = Path('/home/graflu/Documents/uncertainty/NDVI_GPR-ProSAIL_GLAI_values_crops.csv')
 
+    extract_data(lai_dir, parcels, output_fname)
     
 
     
