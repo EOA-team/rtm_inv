@@ -46,12 +46,13 @@ def inv_img(
         as row indices in the `lut`.
     """
     output_shape = (n_solutions, img.shape[1], img.shape[2])
-    lut_idxs = np.zeros(shape=output_shape, dtype='uint32')
+    lut_idxs = np.zeros(shape=output_shape, dtype='int32')
 
     for row in prange(img.shape[1]):
         for col in range(img.shape[2]):
             # skip masked pixels
             if mask[row, col]:
+                lut_idxs[:,row,col] = -1
                 continue
             # get sensor spectrum (single pixel)
             image_ref = img[:,row,col]
@@ -79,7 +80,7 @@ def inv_img(
 @njit(cache=True, parallel=True)
 def _retrieve_traits(
         trait_values: np.ndarray,
-        lut_idx: np.ndarray,
+        lut_idxs: np.ndarray,
     ):
     """
     Uses the indices of the best matching spectra to retrieve the
@@ -87,13 +88,13 @@ def _retrieve_traits(
 
     :param trait_values:
         array with traits entries in the LUT
-    :param lut_idx:
+    :param lut_idxs:
         indices of the best matching entries in the LUT
     :returns:
         3-d image with trait values with shape (n_traits, nrows, ncols)
     """
     n_traits = trait_values.shape[1]
-    _, rows, cols = lut_idx.shape
+    _, rows, cols = lut_idxs.shape
     # allocate array for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
     trait_img = np.zeros(trait_img_shape, dtype='float64')
@@ -101,13 +102,18 @@ def _retrieve_traits(
     for trait in range(n_traits):
         for row in prange(rows):
             for col in range(cols):
+                # continue if the pixel was masked before and has therefore no
+                # solutions
+                if (lut_idxs[:,row,col] == -1).all():
+                    trait_img[trait,row,col] = np.nan
+                    continue
                 trait_img[trait,row,col] = \
-                    np.median(trait_values[lut_idx[:,row,col],trait])
+                    np.median(trait_values[lut_idxs[:,row,col],trait])
     return trait_img
 
 def retrieve_traits(
         lut: pd.DataFrame,
-        lut_idx: np.ndarray,
+        lut_idxs: np.ndarray,
         traits: List[str]
     ):
     """
@@ -116,7 +122,7 @@ def retrieve_traits(
     :param lut:
         complete lookup-table from the RTM forward runs (i.e.,
         spectra + trait values) as ``pd.DataFrame``.
-    :param lut_idx:
+    :param lut_idxs:
         row indices in the `lut` denoting for each image pixel
         the *n* best solutions (smallest value of cost function
         between modelled and observed spectra)
@@ -132,4 +138,4 @@ def retrieve_traits(
         where rows and columns are given by the shape of lut_idx
     """
     trait_values = lut[traits].values
-    return _retrieve_traits(trait_values, lut_idx)
+    return _retrieve_traits(trait_values, lut_idxs)
