@@ -2,15 +2,12 @@
 Module to create lookup-tables (LUT) of synthetic spectra
 '''
 
-from pathlib import Path
-from typing import List, Optional, Union
-
 import lhsmdu
-
 import numpy as np
 import pandas as pd
 
-from typing import Union
+from pathlib import Path
+from typing import List, Optional, Union
 
 from rtm_inv._distributions import Distributions
 
