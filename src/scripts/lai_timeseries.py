@@ -230,58 +230,58 @@ def plot_crop_timeseries(
         plt.close(f)
 
         # scatter plot with kernel density (GPR-LAI vs ProSAIL LAI)
-        gpr_lai = ts_df_crop['GPR GLAI'].values
-        prosail_lai = ts_df_crop['ProSAIL GLAI'].values
-        prosail_lai = prosail_lai[~np.isnan(gpr_lai)]
-        gpr_lai = gpr_lai[~np.isnan(gpr_lai)]
-
-        xy = np.vstack([gpr_lai, prosail_lai])
-        # get kernel density
-        z = gaussian_kde(xy)(xy)
-        # Sort the points by density, so that the densest points are plotted last
-        idx = z.argsort()
-        
-        x, y, z = gpr_lai[idx], prosail_lai[idx], z[idx]
-
-        f = plt.figure(figsize=(14,14))
-        scatter_axes = plt.subplot2grid((3, 3), (1, 0), rowspan=2, colspan=2)
-        x_hist_axes = plt.subplot2grid((3, 3), (0, 0), colspan=2,
-                                       sharex=scatter_axes)
-        y_hist_axes = plt.subplot2grid((3, 3), (1, 2), rowspan=2,
-                                       sharey=scatter_axes)
-        
-        scatter_axes.scatter(x, y, c=z, s=50)
-        # scatter_axes.scatter(gpr_lai, prosail_lai)
-        scatter_axes.set_xlim(0,8)
-        scatter_axes.set_ylim(0,8)
-        scatter_axes.set_xlabel(r'GPR GLAI [$m^2$/$m^2$]')
-        scatter_axes.set_ylabel(r'ProSAIL GLAI [$m^2$/$m^2$]')
-        
-        sns.histplot(
-            data=gpr_lai,
-            stat='count',
-            ax=x_hist_axes,
-            label='GPR GLAI [$m^2$/$m^2$]'
-        )
-        x_hist_axes.legend()
-        sns.histplot(
-            y=prosail_lai,
-            stat='count',
-            ax=y_hist_axes,
-            label='ProSAIL GLAI [$m^2$/$m^2$]'
-        )
-        y_hist_axes.legend()
-
-        fname_fig = output_fname.parent.joinpath(f'{crop_type}_GPR-ProSAIL_GLAI.png')
-        f.savefig(fname_fig, dpi=200, bbox_inches='tight')
-        plt.close(f)
+        # gpr_lai = ts_df_crop['GPR GLAI'].values
+        # prosail_lai = ts_df_crop['ProSAIL GLAI'].values
+        # prosail_lai = prosail_lai[~np.isnan(gpr_lai)]
+        # gpr_lai = gpr_lai[~np.isnan(gpr_lai)]
+        #
+        # xy = np.vstack([gpr_lai, prosail_lai])
+        # # get kernel density
+        # z = gaussian_kde(xy)(xy)
+        # # Sort the points by density, so that the densest points are plotted last
+        # idx = z.argsort()
+        #
+        # x, y, z = gpr_lai[idx], prosail_lai[idx], z[idx]
+        #
+        # f = plt.figure(figsize=(14,14))
+        # scatter_axes = plt.subplot2grid((3, 3), (1, 0), rowspan=2, colspan=2)
+        # x_hist_axes = plt.subplot2grid((3, 3), (0, 0), colspan=2,
+        #                                sharex=scatter_axes)
+        # y_hist_axes = plt.subplot2grid((3, 3), (1, 2), rowspan=2,
+        #                                sharey=scatter_axes)
+        #
+        # scatter_axes.scatter(x, y, c=z, s=50)
+        # # scatter_axes.scatter(gpr_lai, prosail_lai)
+        # scatter_axes.set_xlim(0,8)
+        # scatter_axes.set_ylim(0,8)
+        # scatter_axes.set_xlabel(r'GPR GLAI [$m^2$/$m^2$]')
+        # scatter_axes.set_ylabel(r'ProSAIL GLAI [$m^2$/$m^2$]')
+        #
+        # sns.histplot(
+        #     data=gpr_lai,
+        #     stat='count',
+        #     ax=x_hist_axes,
+        #     label='GPR GLAI [$m^2$/$m^2$]'
+        # )
+        # x_hist_axes.legend()
+        # sns.histplot(
+        #     y=prosail_lai,
+        #     stat='count',
+        #     ax=y_hist_axes,
+        #     label='ProSAIL GLAI [$m^2$/$m^2$]'
+        # )
+        # y_hist_axes.legend()
+        #
+        # fname_fig = output_fname.parent.joinpath(f'{crop_type}_GPR-ProSAIL_GLAI.png')
+        # f.savefig(fname_fig, dpi=200, bbox_inches='tight')
+        # plt.close(f)
 
 if __name__ == '__main__':
 
     # set input and output paths
     parcels = Path('/mnt/ides/Lukas/software/scripts_paper_uncertainty/shp/ZH_Polygons_2019_EPSG32632_selected-crops_buffered.shp')
     lai_dir = Path('/home/graflu/Documents/uncertainty/S2_MSIL1C_orig')
-    output_fname = Path('/home/graflu/Documents/uncertainty/NDVI_GPR-ProSAIL_GLAI_values_crops.csv')
+    output_fname = Path('/home/graflu/Documents/uncertainty/GLAI_TimeSeries/NDVI_GPR-ProSAIL_GLAI_values_crops.csv')
     # output_fname = Path('/mnt/ides/Lukas/04_Work/GPR_LAI/NDVI_GPR-ProSAIL_GLAI_values_crops.csv')
 
     # extract_data(lai_dir, parcels, output_fname)
