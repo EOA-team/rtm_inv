@@ -56,7 +56,7 @@ def inv_img(
                 continue
             # get sensor spectrum (single pixel)
             image_ref = img[:,row,col]
-            image_ref_normalized = np.sum(np.abs(image_ref - (np.mean(image_ref))))
+            # image_ref_normalized = np.sum(np.abs(image_ref - (np.mean(image_ref))))
             # cost functions (from EnMap box) implemented in a
             # way Numba can handle them (cannot use keywords in numpy functions)
             delta = np.zeros(shape=(lut.shape[0],), dtype='float64')
@@ -65,16 +65,14 @@ def inv_img(
                     delta[idx] = np.sqrt(np.mean((image_ref - lut[idx,:])**2))
                 elif cost_function == 'mae':
                     delta[idx] = np.sum(np.abs(image_ref - lut[idx,:]))
-                elif cost_function == 'mNSE':
-                    delta[idx] = 1.0 - \
-                        ((np.sum(np.abs(image_ref - lut[idx,:]))) / image_ref_normalized)
+                elif cost_function == 'contrast_function':
+                    delta[idx] = np.sum(
+                        -np.log10(lut[idx,:] / image_ref) + lut[idx,:] / image_ref
+                    )
             # find the smallest errors between simulated and observed spectra
             # we need the row index of the corresponding entries in the LUT
             delta_sorted = np.argsort(delta)
             lut_idxs[:,row,col] = delta_sorted[0:n_solutions]
-            # if row > 0 and col == 0 and row % 100 == 0:
-            #     print(f'Processed Row {row}/{img.shape[1]}')
-
     return lut_idxs
 
 @njit(cache=True, parallel=True)
