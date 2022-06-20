@@ -12,8 +12,8 @@ from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
-from rtm_inv.lookup_table import LookupTable
-from rtm_inv._sensors import Sensors
+from core.sensors import Sensors
+
 
 class SPARTParameters:
     """
@@ -57,7 +57,7 @@ class RTM:
     """
     def __init__(
             self,
-            lut: LookupTable,
+            lut,
             rtm: str,
             n_step: Optional[int] = 500
         ):
@@ -155,29 +155,3 @@ class RTM:
             self._run_prosail(sensor=sensor, **kwargs)
 
         return self._lut.samples
-
-if __name__ == '__main__':
-
-    import matplotlib.pyplot as plt
-
-    fpath_rtm_params = Path('../../parameters/prosail_s2.csv')
-
-    lut = LookupTable(params_csv=fpath_rtm_params)
-    num_samples = 50000
-    method = 'LHS'
-    lut.generate_samples(num_samples, method)
-
-    rtm = RTM(lut=lut, rtm='prosail')
-    s2_rtm_simulations = rtm.simulate_spectra(sensor='Sentinel2A')
-
-    # save to CSV
-    s2_rtm_simulations.to_csv('../../parameters/s2_prosail_demo.csv', index=False)
-
-    s2a = Sensors.Sentinel2A
-    plt.plot(
-        s2a.central_wvls,
-        s2_rtm_simulations[s2a.band_names].values.T
-    )
-    plt.ylabel('Surface Reflectance Factor [-]')
-    plt.xlabel('Wavelength [nm]')
-    plt.show()

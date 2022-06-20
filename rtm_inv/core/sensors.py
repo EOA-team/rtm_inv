@@ -52,6 +52,23 @@ class Sensors(object):
         """
         name = 'LANDSAT8-OLI'
         num_bands = 9
-        # order of wvl of bands is a bit weired but it's the official ordering
+        # order of wvl of bands is a bit weird but it's the official ordering
         band_names = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
         central_wvls = [440, 480, 560, 655, 865, 1610, 2200, 590, 1370]
+
+    class PlanetSuperDove:
+        """
+        defines PlanetScope SuperDove
+        """
+        name = 'PS_Superdove'
+        num_bands = 8
+        band_names = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8']
+        band_names_long = [
+            'coastal-blue', 'blue', 'green_i', 'green', 'yellow', 'red', 'red-edge', 'NIR'
+        ]
+        central_wvls = [
+            443, 490, 531, 565, 610, 665, 705, 865
+        ]
+        band_widths = [
+            20, 50, 36, 36, 20, 31, 15, 40
+        ]

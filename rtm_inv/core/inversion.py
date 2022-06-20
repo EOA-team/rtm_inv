@@ -9,7 +9,6 @@ import pandas as pd
 from numba import njit, prange
 from typing import List
 
-
 @njit(parallel=True, cache=True)
 def inv_img(
         lut: np.ndarray,

@@ -9,7 +9,8 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Union
 
-from rtm_inv._distributions import Distributions
+from core.distributions import Distributions
+from core.rtm_adapter import RTM
 
 sampling_methods: List[str] = ['LHS']
 
@@ -131,3 +132,39 @@ class LookupTable(object):
 
         # set samples to instance variable
         self.samples = traits_lhc
+
+def generate_lut(
+        sensor: str,
+        lut_params: Union[Path, pd.DataFrame],
+        lut_size: Optional[int] = 50000,
+        rtm_name: Optional[str] = 'prosail',
+        sampling_method: Optional[str] = 'LHS',
+        solar_zenith_angle: Optional[float] = None,
+        viewing_zenith_angle: Optional[float] = None,
+        solar_azimuth_angle: Optional[float] = None,
+        viewing_azimuth_angle: Optional[float] = None
+    ) -> pd.DataFrame:
+    """
+    """
+    if isinstance(lut_params, Path):
+        lut_params = pd.read_csv(lut_params)
+
+    # overwrite angles in LUT DataFrame
+    lut_params.loc[lut_params['Parameter'] == 'tts','Min'] = solar_zenith_angle
+    lut_params.loc[lut_params['Parameter'] == 'tts','Max'] = solar_zenith_angle
+    lut_params.loc[lut_params['Parameter'] == 'tto', 'Min'] = viewing_zenith_angle
+    lut_params.loc[lut_params['Parameter'] == 'tto', 'Max'] = viewing_zenith_angle
+    # calculate relative azimuth (psi)
+    psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
+    lut_params.loc[lut_params['Parameter'] == 'psi', 'Min'] = psi
+    lut_params.loc[lut_params['Parameter'] == 'psi', 'Max'] = psi
+
+    # get input parameter samples first
+    lut = LookupTable(params=lut_params)
+    lut.generate_samples(lut_size, sampling_method)
+
+    # and run the RTM in forward mode in the second step
+    # outputs get resampled to the spectral resolution of the sensor
+    rtm = RTM(lut=lut, rtm=rtm_name)
+    lut_simulations = rtm.simulate_spectra(sensor=sensor)
+    return lut_simulations

@@ -65,7 +65,7 @@ class Distributions(object):
 
         :param distribution:
             name of the distribution from which to sample. See
-            `~rtm_inv.distributions.Distributions.distributions` for a list
+            `~core.distributions.Distributions.distributions` for a list
             of distributions currently implemented
         :param n_samples:
             number of samples to draw.
