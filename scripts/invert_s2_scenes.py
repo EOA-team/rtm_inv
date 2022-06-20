@@ -23,8 +23,8 @@ from eodal.operational.mapping import MapperConfigs
 from pathlib import Path
 from typing import List, Optional, Union
 
-from core.inversion import inv_img, retrieve_traits
-from core.lookup_table import generate_lut
+from rtm_imv.core.inversion import inv_img, retrieve_traits
+from rtm_inv.core.lookup_table import generate_lut
 
 logger = get_settings().logger
 
@@ -239,8 +239,8 @@ if __name__ == '__main__':
     traits = ['lai']
     n_solutions = 100
     cost_function = 'rmse'
-    rtm_params = Path('../../parameters/prosail_s2.csv')
-    lut_size = 2000 # 50000
+    rtm_params = Path('../parameters/prosail_s2.csv')
+    lut_size = 50000
 
     lut_config = LookupTableBasedInversion(
         traits=traits,
@@ -255,7 +255,7 @@ if __name__ == '__main__':
     scene_cloud_cover_threshold = 50.
 
     # define start and end of the time series
-    date_start = date(2022,6,1)
+    date_start = date(2022,2,1)
     date_end = date(2022,7,1)
 
     # define area of interest
@@ -281,68 +281,3 @@ if __name__ == '__main__':
         unique_feature_id=unique_feature_id,
         output_dir=output_dir
     )
-
-    
-    
-
-
-    
-
-    # # loop over scenes and invert them using the median of the 100 best fitting solutions
-    # for scene in msil2a_scenes_dir.rglob('S2*_MSIL2A_*.SAFE'):
-    #
-    #     # search for the corresponding lookup-table
-    #     scene_lut = lut_dir.joinpath(scene.name.replace('.SAFE', '-prosail_lut.pkl'))
-    #     s2_lut = pd.read_pickle(scene_lut)
-    #
-    #     s2_collection = Sentinel2().from_safe(
-    #         in_dir=scene,
-    #         read_scl=False,
-    #         vector_features=aoi
-    #     )
-    #
-    #     # resample to 10m spatial resolution using nearest neighbor interpolation
-    #     s2_collection.resample(target_resolution=10, inplace=True)
-    #     # scale reflectance values between 0 and 1
-    #     s2_collection.scale(inplace=True)
-    #
-    #     # invert the S2 scene by comparing ProSAIL simulated to S2 observed spectra
-    #     s2_lut_spectra = s2_lut[s2_collection.band_names].values
-    #     s2_spectra = s2_collection.get_values()
-    #     if isinstance(s2_spectra, np.ma.MaskedArray):
-    #         mask = s2_spectra.mask[0,:,:]
-    #         s2_spectra = s2_spectra.data
-    #     else:
-    #         mask = np.zeros(shape=(s2_spectra.shape[1], s2_spectra.shape[2]), dtype='uint8')
-    #         mask = mask.as_type('bool')
-    #
-    #     logger.info(f'Starting inversion of {scene.name}')
-    #     lut_idxs = inv_img(
-    #         lut=s2_lut_spectra,
-    #         img=s2_spectra,
-    #         mask=mask,
-    #         cost_function=cost_function,
-    #         n_solutions=n_solutions,
-    #     )
-    #     trait_img = retrieve_traits(
-    #         lut=s2_lut,
-    #         lut_idxs=lut_idxs,
-    #         traits=traits
-    #     )
-    #     logger.info(f'Finished inversion of {scene.name}')
-    #     # save LAI to gTiff
-    #     collection = RasterCollection(
-    #         Band,
-    #         geo_info=s2_collection['B12'].geo_info,
-    #         band_name='GLAI',
-    #         values=trait_img[0,:,:]
-    #     )
-    #     out_dir_vis = scene.name.replace('.SAFE', '.VIs')
-    #     date = scene.name.split('_')[2][0:8]
-    #     tile = scene.name.split('_')[5]
-    #     sensor = scene.name.split('_')[0]
-    #     fname_lai = f'VI_{date}_{tile}_MSIL2A_{sensor}_None_10m_GLAI.tif'
-    #     fpath_out = msil2a_scenes_dir.joinpath(out_dir_vis).joinpath('Vegetation_Indices').joinpath(fname_lai)
-    #     collection.to_rasterio(fpath_raster=fpath_out)
-    #     logger.info(f'Wrote LAI product to file: {fpath_out}')
-    #
