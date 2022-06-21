@@ -23,6 +23,7 @@ setuptools.setup(
     author='Lukas Graf (D-USYS, ETH Zurich)',
     author_email ='NA',
     url='NA',
+    packages=find_packages(),
     include_package_data=True,
     package_data={'': []},
     classifiers = [
