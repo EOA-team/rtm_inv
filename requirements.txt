@@ -1,0 +1,6 @@
+prosail
+spectral
+numpy
+lhsmdu
+# eodal
+pandas
