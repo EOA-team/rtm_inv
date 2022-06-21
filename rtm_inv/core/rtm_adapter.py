@@ -1,5 +1,5 @@
 '''
-Adapter to RTMs. RTMs currently implemented
+Adapter to radiative transfer models (RTMs). RTMs currently implemented
 
     - ProSAIL (4SAIL with either Prospect-5 or Prospect-D as leaf model)
     - SPART (BSM, 4SAIL, SMAC and Prospect-5 or Prospect-PRO)
