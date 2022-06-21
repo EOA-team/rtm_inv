@@ -8,7 +8,6 @@ Adapter to RTMs. RTMs currently implemented
 import numpy as np
 import prosail
 
-from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
