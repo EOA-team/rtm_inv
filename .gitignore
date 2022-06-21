@@ -1,3 +1,5 @@
+scripts/invert_s2_scene.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
