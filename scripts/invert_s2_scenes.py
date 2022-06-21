@@ -56,9 +56,16 @@ class RTMConfig:
         self.rtm = rtm
 
         @property
-        def rtm_params():
+        def rtm_params() -> Path:
             return self.rtm_params
 
+        @property
+        def traits() -> List[str]:
+            return self.traits
+
+        @property
+        def rtm() -> str:
+            return self.rtm
 
 class LookupTableBasedInversion(RTMConfig):
     """
@@ -95,8 +102,20 @@ class LookupTableBasedInversion(RTMConfig):
         self.lut_size = lut_size
 
         @property
-        def lut_size():
+        def lut_size() -> int:
             return self.lut_size
+
+        @property
+        def n_solutions() -> int:
+            return self.n_solutions
+
+        @property
+        def cost_function() -> str:
+            return self.cost_function
+
+        @property
+        def method() -> str:
+            return self.method
 
 def traits_from_s2(
         date_start: date,
@@ -110,10 +129,47 @@ def traits_from_s2(
         processing_level: ProcessingLevels = ProcessingLevels.L2A,
         unique_feature_id: Optional[str] = None,
         **mapper_configs
-    ): 
+    ) -> None: 
     """
     Retrieve traits from Sentinel-2 imagery using radiative transfer model
-    inversion
+    inversion.
+
+    The function works on a user-defined spatio-temporal subset of
+    Sentinel-2 scenes and can provide 1:n traits, where n depends
+    on the number of biophysical and -chemical parameters the RTM
+    has available.
+
+    :param date_start:
+        start date for performing the trait retrieval
+    :param date_end:
+        end date for performing the trait retrieval
+    :param aoi:
+        area of interest for which to peform the trait retrieval
+    :param rtm_config:
+        radiative transfer model configuration (forward and inverse)
+    :param output_dir:
+        directory where to save the trait results (geoTiffs) to
+    :param scene_cloud_cover_threshold:
+        maximum scene-wide cloud cover threshold to use in % (0-100). 
+        f the `processing_level` is set to L2A, clouds, shadows
+        and snow are masked based on the scene-classification layer.
+        Default is 80%.
+    :param spatial_resolution:
+        spatial resolution of the output traits in meters. Default
+        is 10 (m).
+    :param resampling_method:
+        resampling method to use when changing the spatial resolution
+        of the bands. Default is `cv2.INTER_NEAREST_EXACT`.
+    :param processing_level:
+        Processing level of the Sentinel-2 data to use. Default is
+        L2A (top-of-canopy). Depending on the RTM also L1C (top-of-
+        atmosphere) is possible.
+    :param unique_feature_id:
+        optional attribute column in the `aoi` entry to be used as unique
+        ID. If not available a random UUID is generated.
+    :param mapper_configs:
+        optional further mapping configurations to pass to
+        `eodal.operational.mapping.MapperConfigs`
     """
     # setup Sentinel-2 mapper to get the relevant scenes
     mapper_configs = MapperConfigs(
