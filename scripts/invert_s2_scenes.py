@@ -23,7 +23,7 @@ from eodal.operational.mapping import MapperConfigs
 from pathlib import Path
 from typing import List, Optional, Union
 
-from rtm_imv.core.inversion import inv_img, retrieve_traits
+from rtm_inv.core.inversion import inv_img, retrieve_traits
 from rtm_inv.core.lookup_table import generate_lut
 
 logger = get_settings().logger
