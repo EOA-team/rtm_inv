@@ -16,7 +16,7 @@ def inv_img(
         mask: np.ndarray,
         cost_function: str,
         n_solutions: int
-    ):
+    ) -> np.ndarray:
     """
     Lookup-table based inversion on images by minimizing a
     cost function using *n* best solutions to improve numerical
@@ -78,7 +78,7 @@ def inv_img(
 def _retrieve_traits(
         trait_values: np.ndarray,
         lut_idxs: np.ndarray,
-    ):
+    ) -> np.ndarray:
     """
     Uses the indices of the best matching spectra to retrieve the
     corresponding trait values from the LUT
@@ -112,7 +112,7 @@ def retrieve_traits(
         lut: pd.DataFrame,
         lut_idxs: np.ndarray,
         traits: List[str]
-    ):
+    ) -> np.ndarray:
     """
     Extracts traits from a lookup-table on results of `inv_img`
 
