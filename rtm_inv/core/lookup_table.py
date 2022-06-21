@@ -9,8 +9,8 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Union
 
-from core.distributions import Distributions
-from core.rtm_adapter import RTM
+from rtm_inv.core.distributions import Distributions
+from rtm_inv.core.rtm_adapter import RTM
 
 sampling_methods: List[str] = ['LHS']
 

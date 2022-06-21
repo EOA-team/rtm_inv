@@ -12,7 +12,7 @@ from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
-from core.sensors import Sensors
+from rtm_inv.core.sensors import Sensors
 
 
 class SPARTParameters:
