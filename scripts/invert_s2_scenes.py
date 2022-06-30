@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
     # define area of interest
     area_of_interest = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326.geojson'
+        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_reckenholz_kloten_airport_4326.geojson'
     )
     unique_feature_id='name'
     aoi = gpd.read_file(area_of_interest)
