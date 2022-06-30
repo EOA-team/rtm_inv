@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     # GeoPackage with Planet pixels
     data_dir = Path('/home/graflu/Documents/PlanetScope/PS_Eschikon_TS')
-    ps_pixels = data_dir.joinpath('timeseries_BW.gpkg')
+    ps_pixels = data_dir.joinpath('timeseries_BW_medians.gpkg')
 
     # RTM configuration
     traits = ['lai']
@@ -135,5 +135,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = data_dir.joinpath('timeseries_BW_lai.gpkg')
+    fname = data_dir.joinpath('timeseries_BW_medians_lai.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
