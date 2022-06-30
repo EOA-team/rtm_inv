@@ -38,10 +38,10 @@ def traits_from_ps_pixels(
     """
 
     pixels = gpd.read_file(ps_pixels)
-    pixels['acquired'] = pd.to_datetime(pixels['acquired'])
+    pixels['acquired_other'] = pd.to_datetime(pixels['acquired_other'])
 
     # loop over scenes and perform inversion per scene
-    scenes = pixels.groupby(by='acquired')
+    scenes = pixels.groupby(by='acquired_other')
     results = []
     for scene in scenes:
 
