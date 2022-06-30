@@ -131,7 +131,10 @@ if __name__ == '__main__':
         rtm_params=rtm_params
     )
 
-    ps_pixels_traits = traits_from_ps_pixels(ps_pixels, traits, rtm_config)
+    ps_pixels_traits = traits_from_ps_pixels(
+        ps_pixels=ps_pixels,
+        rtm_config=rtm_config
+    )
 
     # save results to file
     fname = data_dir.joinpath('timeseries_BW_lai.gpkg')
