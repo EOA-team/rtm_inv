@@ -38,6 +38,7 @@ for point in points:
     ax.set_ylabel(r'PlanetScope Green Leaf Area Index [$m^2$/$m^2$]')
     ax.set_xlabel('Time')
     ax.set_title(f'Bramenwies - Point {point}')
+    ax.set_ylim(0,7)
     plt.xticks(rotation=45)
     fname = out_dir.joinpath(f'{point}_ps_lai_timeseries.png')
     f.savefig(fname, bbox_inches='tight')
