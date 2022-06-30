@@ -28,6 +28,13 @@ def traits_from_ps_pixels(
     """
     Retrieve traits from Planet SuperDove pixels stored in a GeoDataFrame
     using radiative transfer model inversion.
+
+    :param ps_pixels:
+        GeoDataFrame with PlanetScope pixel spectra (SuperDove sensor)
+    :param rtm_config:
+        radiative transfer model configuration (forward and inverse)
+    :returns:
+        GeoDataFrame with retrieved traits
     """
 
     pixels = gpd.read_file(ps_pixels)
@@ -130,4 +137,3 @@ if __name__ == '__main__':
     # save results to file
     fname = data_dir.joinpath('timeseries_BW_lai.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
-
