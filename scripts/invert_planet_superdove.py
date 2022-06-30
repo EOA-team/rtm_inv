@@ -2,21 +2,12 @@
 Inverts a DataFrame of Planet-Scope SuperDove pixel observations
 '''
 
-import cv2
 import numpy as np
 import geopandas as gpd
 import pandas as pd
 
-from datetime import date
 from eodal.config import get_settings
-from eodal.core.band import Band
-from eodal.core.raster import RasterCollection
-from eodal.core.sensors import Sentinel2
-from eodal.operational.mapping.sentinel2 import Sentinel2Mapper
-from eodal.utils.sentinel2 import ProcessingLevels, get_S2_platform_from_safe
-from eodal.operational.mapping import MapperConfigs
 from pathlib import Path
-from typing import List, Optional, Union
 
 from rtm_inv.core.config import RTMConfig, LookupTableBasedInversion
 from rtm_inv.core.inversion import inv_img, retrieve_traits
