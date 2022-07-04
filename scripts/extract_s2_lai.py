@@ -1,7 +1,8 @@
 '''
-Created on Jul 1, 2022
-
-@author: graflu
+Script to
+* extract the S2 LAI data
+* plot time series for selected sampling points where ground data is available
+* compare S2 LAI to LAI estimates derived from PlanetScope
 '''
 
 import datetime
@@ -100,20 +101,22 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
     # plot scatter plot
     f, ax = plt.subplots(ncols=1, nrows=1, figsize=(10, 7))
     ax.scatter(merged.lai_s2, merged.lai_ps)
+    ax.plot([x for x in range(0,8)], [x for x in range(0,8)], linestyle='dashed', color='blue')
     ax.set_xlim(0,7)
     ax.set_ylim(0,7)
     ax.set_xlabel(r'Sentinel-2 Green Leaf Area Index [$m^2$/$m^2$]')
     ax.set_ylabel(r'PlanetScope Green Leaf Area Index [$m^2$/$m^2$]')
     r2 = r2_score(merged.lai_s2, merged.lai_ps)
-    ax.annotate(r'$R^2$' + f' = {np.round(r2, 2)}', (6, 6), fontsize=14)
+    ax.annotate(r'$R^2$' + f' = {np.round(r2, 2)}', (5, 6), fontsize=14)
     fname = out_dir.joinpath('lai_scatter_all_pixels.png')
     f.savefig(fname, bbox_inches='tight')
     plt.close(f)
 
 if __name__ == '__main__':
 
-    fpath_points = Path('/mnt/ides/Lukas/04_Work/PS_Eschikon_TS/timeseries_BW_medians_lai.gpkg')
-    s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
+    fpath_points = Path('/mnt/ides/Lukas/04_Work/PS_Eschikon_TS/timeseries_BW_medians_lai_cleaned.gpkg')
+    # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
+    s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
 
