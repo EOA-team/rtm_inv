@@ -1,5 +1,5 @@
 '''
-Plots time series of Planet-Scope LAI
+Plots time series of Planet-Scope traits (LAI, NDVI, etc.)
 '''
 
 from pathlib import Path
