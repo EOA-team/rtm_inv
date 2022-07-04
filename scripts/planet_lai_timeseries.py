@@ -19,6 +19,7 @@ def plot_ts(
     gdf.lai.hist(bins=50, ax=ax, density=False)
     ax.set_xlabel(r'PlanetScope Green Leaf Area Index [$m^2$/$m^2$]')
     ax.set_ylabel('Frequency [-]')
+    ax.set_xlim(0,7)
     f.savefig(out_dir.joinpath('all_ps_lai_histogram.png'), bbox_inches='tight')
     
     # visualize LAI time series for the sampling points

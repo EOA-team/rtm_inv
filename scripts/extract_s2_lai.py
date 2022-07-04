@@ -58,6 +58,7 @@ def plot_histogram(s2_lai: gpd.geoseries, out_dir: Path):
     s2_lai.lai.hist(bins=50, ax=ax, density=False)
     ax.set_xlabel(r'Sentinel-2 Green Leaf Area Index [$m^2$/$m^2$]')
     ax.set_ylabel('Frequency [-]')
+    ax.set_xlim(0,7)
     f.savefig(out_dir.joinpath('all_s2_lai_histogram.png'), bbox_inches='tight')
     plt.close(f)
 
