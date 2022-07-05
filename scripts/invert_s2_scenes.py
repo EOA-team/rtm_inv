@@ -163,7 +163,8 @@ def traits_from_s2(
             else:
                 mask = np.zeros(shape=(s2_spectra.shape[1], s2_spectra.shape[2]), dtype='uint8')
                 mask = mask.as_type('bool')
-        
+            
+
             logger.info(f'Feature {feature_id}: Starting inversion of {metadata.product_uri.iloc[0]}')
             lut_idxs = inv_img(
                 lut=s2_lut_spectra,
@@ -177,7 +178,7 @@ def traits_from_s2(
                 lut_idxs=lut_idxs,
                 traits=rtm_config.traits
             )
-
+            
             # save traits to file
             trait_collection = RasterCollection()
             for tdx, trait in enumerate(traits):
@@ -193,6 +194,13 @@ def traits_from_s2(
             fname = f'{product_uri}_traits.tiff'
             trait_collection.to_rasterio(
                 fpath_raster=output_dir_feature.joinpath(fname)
+            )
+            # calculate the NDVI in addition
+            feature_scene.calc_si('NDVI', inplace=True)
+            fname = f'{product_uri}_NDVI.tiff'
+            feature_scene.to_rasterio(
+                fpath_raster=output_dir_feature.joinpath(fname),
+                band_selection=['NDVI']
             )
             logger.info(f'Feature {feature_id}: Finished inversion of {metadata.product_uri.iloc[0]}')
 
@@ -229,6 +237,7 @@ if __name__ == '__main__':
     # define area of interest
     area_of_interest = Path(
         '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_reckenholz_kloten_airport_4326.geojson'
+        # '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326.geojson'
     )
     unique_feature_id='name'
     aoi = gpd.read_file(area_of_interest)

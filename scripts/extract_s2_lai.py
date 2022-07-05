@@ -1,6 +1,6 @@
 '''
 Script to
-* extract the S2 LAI data
+* extract the S2 LAI/NDVI data
 * plot time series for selected sampling points where ground data is available
 * compare S2 LAI to LAI estimates derived from PlanetScope
 '''
@@ -39,6 +39,13 @@ def extract_data(
         # check if there was data (could also be NaN because of clouds)
         if np.isnan(s2_lai.lai).all():
             continue
+
+        # search for corresponding NDVI file
+        s2_ndvi_file = s2_lai_dir.joinpath(s2_lai_file.name.replace('traits.tiff', 'NDVI.tiff'))
+        s2_lai = RasterCollection.read_pixels(
+            fpath_raster=s2_ndvi_file,
+            vector_features=s2_lai
+        )
     
         # save the sensing data (from file name)
         s2_lai['acquired'] = datetime.datetime.strptime(
@@ -99,7 +106,7 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
     )
     # drop all records were no S2 data is available
     merged.dropna(inplace=True)
-    # plot scatter plot
+    # plot scatter plot (LAI)
     f, ax = plt.subplots(ncols=1, nrows=1, figsize=(10, 7))
     ax.scatter(merged.lai_s2, merged.lai_ps)
     ax.plot([x for x in range(0,8)], [x for x in range(0,8)], linestyle='dashed', color='blue')
@@ -112,12 +119,26 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
     fname = out_dir.joinpath('lai_scatter_all_pixels.png')
     f.savefig(fname, bbox_inches='tight')
     plt.close(f)
+    # plot scatter plot (NDVI)
+    f, ax = plt.subplots(ncols=1, nrows=1, figsize=(10, 7))
+    ax.scatter(merged.NDVI_s2, merged.NDVI_ps)
+    ax.plot([x for x in range(0,2)], [x for x in range(0,2)], linestyle='dashed', color='blue')
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,1)
+    ax.set_xlabel(r'Sentinel-2 NDVI [-]')
+    ax.set_ylabel(r'PlanetScope NDVI [-]')
+    r2 = r2_score(merged.NDVI_s2, merged.NDVI_ps)
+    ax.annotate(r'$R^2$' + f' = {np.round(r2, 2)}', (0.8, 0.4), fontsize=14)
+    fname = out_dir.joinpath('ndvi_scatter_all_pixels.png')
+    f.savefig(fname, bbox_inches='tight')
+    plt.close(f)
 
 if __name__ == '__main__':
 
     fpath_points = Path('/mnt/ides/Lukas/04_Work/PS_Eschikon_TS/timeseries_BW_medians_lai_cleaned.gpkg')
     # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
-    s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
+    s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326')
+    # s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
 
@@ -125,7 +146,7 @@ if __name__ == '__main__':
     out_dir = s2_lai_dir.joinpath('figures')
     out_dir.mkdir(exist_ok=True)
     plot_histogram(s2_lai, out_dir)
-    plot_lai_ts(gdf=s2_lai, out_dir=out_dir)
+    # plot_lai_ts(gdf=s2_lai, out_dir=out_dir)
 
     # compare Planet and S2 LAI
     ps_lai = gpd.read_file(fpath_points)
