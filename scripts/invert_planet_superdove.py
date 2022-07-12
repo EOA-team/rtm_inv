@@ -5,6 +5,7 @@ Inverts a DataFrame of Planet-Scope SuperDove pixel observations
 import numpy as np
 import geopandas as gpd
 import pandas as pd
+import warnings
 
 from eodal.config import get_settings
 from pathlib import Path
@@ -15,6 +16,7 @@ from rtm_inv.core.lookup_table import generate_lut
 from copy import deepcopy
 
 logger = get_settings().logger
+warnings.filterwarnings('ignore')
 
 # define platform
 platform = 'PlanetSuperDove'
@@ -23,7 +25,8 @@ gain = 0.0001
 
 def traits_from_ps_pixels(
         ps_pixels: Path,
-        rtm_config: RTMConfig
+        rtm_config: RTMConfig,
+        column_time: str = 'acquired'
     ) -> gpd.GeoDataFrame: 
     """
     Retrieve traits from Planet SuperDove pixels stored in a GeoDataFrame
@@ -38,10 +41,10 @@ def traits_from_ps_pixels(
     """
 
     pixels = gpd.read_file(ps_pixels)
-    pixels['acquired_other'] = pd.to_datetime(pixels['acquired_other'])
+    pixels[column_time] = pd.to_datetime(pixels[column_time])
 
     # loop over scenes and perform inversion per scene
-    scenes = pixels.groupby(by='acquired_other')
+    scenes = pixels.groupby(by=column_time)
     results = []
     for scene in scenes:
 
@@ -112,8 +115,8 @@ def traits_from_ps_pixels(
 if __name__ == '__main__':
 
     # GeoPackage with Planet pixels
-    data_dir = Path('/home/graflu/Documents/PlanetScope/PS_Eschikon_TS')
-    ps_pixels = data_dir.joinpath('timeseries_BW_medians.gpkg')
+    data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/ZOFE_PlanetScope')
+    ps_pixels = data_dir.joinpath('pixel_zofe.gpkg')
 
     # RTM configuration
     traits = ['lai']
@@ -135,5 +138,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = data_dir.joinpath('timeseries_BW_medians_lai.gpkg')
+    fname = data_dir.joinpath('pixel_zofe_lai.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
