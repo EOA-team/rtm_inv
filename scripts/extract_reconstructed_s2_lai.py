@@ -108,6 +108,7 @@ if __name__ == '__main__':
 
     methods = ['logistic', 'p-spline']
     farms = ['Arenenberg', 'Strickhof', 'Witzwil', 'SwissFutureFarm']
+    # temporal aggregation
     aggregations = ['1D', '2D', '3D', '4D', '5D', '10D']
 
     fpath_insitu = Path(
@@ -118,16 +119,14 @@ if __name__ == '__main__':
         farm_dfs = []
         for farm in farms:
             lai_dir = Path(
-                f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/{farm}'
+                f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/{farm}/reconstructed'
                 )
             farm_df = extract_data(lai_dir, methods, fpath_insitu, farm, aggregation)
             farm_dfs.append(farm_df)
         large_df = pd.concat(farm_dfs)
 
         out_dir = Path(
-            f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/in-situ_traits_2022/green_leaf_area_index/reconstructed_{aggregation}'
+            f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/in-situ_traits_2022/green_leaf_area_index/resample_first/reconstructed_{aggregation}'
         )
         out_dir.mkdir(exist_ok=True)
         plot_scatter(lai_df=large_df, out_dir=out_dir)
-
-
