@@ -13,12 +13,14 @@ import numpy as np
 import xarray as xr
 
 from datetime import datetime
+from eodal.config import get_settings
 from eodal.core.band import Band, GeoInfo
 from eodal.core.raster import RasterCollection
 from pathlib import Path
 from scipy.optimize import curve_fit
 
 plt.style.use('ggplot')
+logger = get_settings().logger
 
 def sigmoid(x: np.ndarray | float, L: float, x0: float, k: float, b: float) -> np.ndarray | float:
     """
@@ -169,11 +171,11 @@ def plot_lai(ds_m: xr.DataArray, lai_raster: RasterCollection, method: str, out_
         plt.close(f)
 
     # generate giff
-    out_file = out_dir.joinpath(f'S2_lai_{method}.gif') 
+    out_file = out_dir.joinpath(f'S2_lai_{method}_{aggregation}.gif') 
     imageio.mimsave(out_file, fig_list, fps=5)
 
 def save_reconstructed_lai(ds_fit: xr.DataArray, out_dir: Path, method: str,
-                           plot: bool = True) -> None:
+                           aggregation: str, plot: bool = True) -> None:
     """
     Write reconstructed LAI values to file and plot them (optional).
 
@@ -183,6 +185,8 @@ def save_reconstructed_lai(ds_fit: xr.DataArray, out_dir: Path, method: str,
         directory where to save results to (files + plots)
     :param method:
         fitting method used (for file-naming)
+    :param aggregation:
+        temporal aggregation used (e.g., '1D' for daily values)
     :param plot:
         if True (Default) plots animated time series (gif)
     """
@@ -190,7 +194,7 @@ def save_reconstructed_lai(ds_fit: xr.DataArray, out_dir: Path, method: str,
     _dates = ds_m.time.values
     # save to file
     lai_values = ds_m.lai.values[0,:,:,:]
-    ds_m.to_netcdf(out_dir.joinpath('test.nc'))
+
     # somehow the values are rotated by 90 degrees in the case of Arenenberg
     if out_dir.name == 'Arenenberg':
         # ds_m.lai.sel(time='2022-02-05').plot() # correct
@@ -214,13 +218,15 @@ def save_reconstructed_lai(ds_fit: xr.DataArray, out_dir: Path, method: str,
             geo_info=geo_info,
             unit='m2/m2'
         )
-    fname = out_dir.joinpath(f'S2_lai_{method}.tiff')
+    fname = out_dir.joinpath(f'S2_lai_{method}_{aggregation}.tiff')
     lai_raster.to_rasterio(fname)
     # optionally plot the LAI spatio-temporal dynamics
     if plot:
         plot_lai(ds_m=ds_m, lai_raster=lai_raster, method=method, out_dir=out_dir)
 
-def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, search_expr: str = '*_lai.tiff'):
+def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, aggregation: str, search_expr: str = '*_lai.tiff'):
+    """
+    """
     lai_list = []
     for lai_file in lai_dir.glob(search_expr):
         # read LAI from file and save it as xarray
@@ -237,7 +243,7 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, search_expr: str = '*_lai.t
     # interpolate nans linearly
     da = da.interpolate_na(dim='time', method='linear')
     # interpolate to daily values
-    da = da.resample(time='1D').interpolate('linear')
+    da = da.resample(time=aggregation).interpolate('linear')
     # fit the sigmoid function
     ds = da.to_dataset(name='lai')
     # set NaNs to zero
@@ -254,7 +260,7 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, search_expr: str = '*_lai.t
         dask='parallelized', 
         output_dtypes=[np.float32]
     )
-    save_reconstructed_lai(ds_fit=ds_spline, out_dir=out_dir, method='p-spline')
+    save_reconstructed_lai(ds_fit=ds_spline, out_dir=out_dir, method='p-spline', aggregation=aggregation)
 
     # fit logistic curve
     ds_logistic = xr.apply_ufunc(
@@ -266,13 +272,23 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, search_expr: str = '*_lai.t
         dask='parallelized', 
         output_dtypes=[np.float32]
     )
-    save_reconstructed_lai(ds_fit=ds_logistic, out_dir=out_dir, method='logistic')
+    save_reconstructed_lai(ds_fit=ds_logistic, out_dir=out_dir, method='logistic', aggregation=aggregation)
 
 if __name__ == '__main__':
     farms = ['Arenenberg', 'Strickhof', 'Witzwil', 'SwissFutureFarm']
+    aggregations = ['1D', '2D', '3D', '4D', '5D', '10D']
     for farm in farms:
+        logger.info(f'Working on {farm}')
         lai_dir = Path(
             f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/{farm}'
         )
         out_dir = lai_dir
-        reconstruct_lai_ts(lai_dir=lai_dir, out_dir=out_dir, search_expr='*_lai.tiff')
+        for aggregation in aggregations:
+            logger.info(f'Farm: {farm} - temporal aggregation: {aggregation} - Started')
+            reconstruct_lai_ts(
+                lai_dir=lai_dir,
+                out_dir=out_dir,
+                aggregation=aggregation,
+                search_expr='*_lai.tiff'
+            )
+            logger.info(f'Farm: {farm} - temporal aggregation: {aggregation} - Finished')
