@@ -196,11 +196,11 @@ def save_reconstructed_lai(ds_fit: xr.DataArray, out_dir: Path, method: str,
     lai_values = ds_m.lai.values[0,:,:,:]
 
     # somehow the values are rotated by 90 degrees in the case of Arenenberg
-    if out_dir.name == 'Arenenberg':
+    if out_dir.parent.name == 'Arenenberg':
         # ds_m.lai.sel(time='2022-02-05').plot() # correct
         for idx in range(lai_values.shape[-1]):
             lai_values[:,:,idx] = np.rot90(np.rot90(np.rot90(ds_m.lai.values[0,:,:,idx]))).T
-    # plt.imshow(lai_values[:,:,0])
+    # plt.imshow(lai_values[:,:,20])
     
     geo_info = GeoInfo(
         epsg=32632,
@@ -240,10 +240,18 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, aggregation: str, search_ex
     # concatenate LAI readings into a single xarray
     da = xr.concat(lai_list, dim='time')
     da = da.sortby('time')
+    # resample to desired temporal resolution
+    # depending on the desired temporal resolution the data must be down- or upsampled
+    # up-sampling means from lower to higher temporal resolution
+    # down-sampling means from higher to lower temporal resolution
+    resampler = da.resample(time=aggregation, skipna=True)
+    if aggregation in ['1D', '2D', '3D']: # up-sampling
+        da = resampler.interpolate('linear')
+    else:  # down-sampling
+        da = resampler.reduce(np.median)
+
     # interpolate nans linearly
     da = da.interpolate_na(dim='time', method='linear')
-    # interpolate to daily values
-    da = da.resample(time=aggregation).interpolate('linear')
     # fit the sigmoid function
     ds = da.to_dataset(name='lai')
     # set NaNs to zero
@@ -257,7 +265,7 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, aggregation: str, search_ex
         input_core_dims=[['time']],
         output_core_dims=[['time']], 
         vectorize=True, 
-        dask='parallelized', 
+        dask='allowed', 
         output_dtypes=[np.float32]
     )
     save_reconstructed_lai(ds_fit=ds_spline, out_dir=out_dir, method='p-spline', aggregation=aggregation)
@@ -269,20 +277,21 @@ def reconstruct_lai_ts(lai_dir: Path, out_dir: Path, aggregation: str, search_ex
         input_core_dims=[['time']],
         output_core_dims=[['time']], 
         vectorize=True, 
-        dask='parallelized', 
+        dask='allowed', 
         output_dtypes=[np.float32]
     )
     save_reconstructed_lai(ds_fit=ds_logistic, out_dir=out_dir, method='logistic', aggregation=aggregation)
 
 if __name__ == '__main__':
-    farms = ['Arenenberg', 'Strickhof', 'Witzwil', 'SwissFutureFarm']
+    farms = ['Arenenberg'] # , 'Strickhof', 'Witzwil', 'SwissFutureFarm']
     aggregations = ['1D', '2D', '3D', '4D', '5D', '10D']
     for farm in farms:
         logger.info(f'Working on {farm}')
         lai_dir = Path(
             f'/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/{farm}'
         )
-        out_dir = lai_dir
+        out_dir = lai_dir.joinpath('reconstructed')
+        out_dir.mkdir(exist_ok=True)
         for aggregation in aggregations:
             logger.info(f'Farm: {farm} - temporal aggregation: {aggregation} - Started')
             reconstruct_lai_ts(
