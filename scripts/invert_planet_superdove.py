@@ -115,8 +115,8 @@ def traits_from_ps_pixels(
 if __name__ == '__main__':
 
     # GeoPackage with Planet pixels
-    data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/ZOFE_PlanetScope')
-    ps_pixels = data_dir.joinpath('pixel_zofe.gpkg')
+    data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data')
+    ps_pixels = data_dir.joinpath('timeseries_phenomEn_all_points.gpkg')
 
     # RTM configuration
     traits = ['lai']
@@ -138,5 +138,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = data_dir.joinpath('pixel_zofe_lai.gpkg')
+    fname = data_dir.joinpath('timeseries_phenomEn_all_points_ps_lai.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
