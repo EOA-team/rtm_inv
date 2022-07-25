@@ -25,7 +25,7 @@ def extract_data(
     # get sampling points
     points = gpd.read_file(fpath_points)
     point_geoms = gpd.GeoDataFrame(geometry=points.geometry.unique(), crs=points.crs)
-    point_ids = points[['geometry', 'Point_ID_caller']].copy()
+    point_ids = points[['geometry', 'Point_ID']].copy()
     point_ids = point_ids.drop_duplicates()
     
     # loop over S2 LAI files and extract the values from the S2 pixels closest to the sampling points
@@ -135,12 +135,14 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
 
 if __name__ == '__main__':
 
-    fpath_points = Path('/mnt/ides/Lukas/04_Work/PS_Eschikon_TS/timeseries_BW_medians_lai_cleaned.gpkg')
+    fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/timeseries_phenomEn_all_points_medians.gpkg')
     # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
     s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326')
     # s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
+    s2_lai.drop(['index_right'], axis=1, inplace=True)
+    s2_lai.to_file('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/timeseries_phenomEn_all_points_medians_s2_lai.gpkg')
 
     # plot data
     out_dir = s2_lai_dir.joinpath('figures')
