@@ -8,9 +8,11 @@ spectra.
 '''
 
 import cv2
+import itertools
 import numpy as np
 import geopandas as gpd
 import pandas as pd
+import warnings
 
 from datetime import date
 from eodal.config import get_settings
@@ -21,13 +23,15 @@ from eodal.operational.mapping.sentinel2 import Sentinel2Mapper
 from eodal.utils.sentinel2 import ProcessingLevels, get_S2_platform_from_safe
 from eodal.operational.mapping import MapperConfigs
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from rtm_inv.core.config import RTMConfig, LookupTableBasedInversion
 from rtm_inv.core.inversion import inv_img, retrieve_traits
 from rtm_inv.core.lookup_table import generate_lut
 
 logger = get_settings().logger
+
+warnings.filterwarnings('ignore')
 
 def traits_from_s2(
         date_start: date,
@@ -196,34 +200,45 @@ def traits_from_s2(
                 fpath_raster=output_dir_feature.joinpath(fname)
             )
             # calculate the NDVI in addition
-            feature_scene.calc_si('NDVI', inplace=True)
-            fname = f'{product_uri}_NDVI.tiff'
-            feature_scene.to_rasterio(
-                fpath_raster=output_dir_feature.joinpath(fname),
-                band_selection=['NDVI']
-            )
+            # feature_scene.calc_si('NDVI', inplace=True)
+            # fname = f'{product_uri}_NDVI.tiff'
+            # feature_scene.to_rasterio(
+            #     fpath_raster=output_dir_feature.joinpath(fname),
+            #     band_selection=['NDVI']
+            # )
             logger.info(f'Feature {feature_id}: Finished inversion of {metadata.product_uri.iloc[0]}')
 
 if __name__ == '__main__':
 
+    def get_farms(data_dir: Path, farms: List[str], year: int) -> Dict[str, gpd.GeoDataFrame]:
+        """
+        Geometries of parcels for farms where LAI was collected
+        """
+        # loop over farms combine parcel geometries
+        res = {}
+        for farm in farms:
+            parcels = []
+            for fpath_farm_shp in data_dir.rglob(f'{farm}/WW_{year}/*.shp'):
+                farm_shp = gpd.read_file(fpath_farm_shp)
+                parcels.append(farm_shp[['geometry']].copy())
+            farm_gdf = pd.concat(parcels)
+            # dissolve geometries to get a single (Multi)Polygon per farm
+            farm_gdf = farm_gdf.dissolve()
+            farm_gdf['farm'] = farm
+            res[farm] = farm_gdf
+        return res
+
+    data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
+    year = 2022
+    farms = ['Strickhof']
+    
+    # get field parcel geometries organized by farm
+    farm_gdf_dict = get_farms(data_dir, farms, year)
+    aoi = farm_gdf_dict[farms[0]]
+
     # output directory for writing trait images
     output_dir = Path(
         '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data'
-    )
-
-    # RTM configuration
-    traits = ['lai']
-    n_solutions = 100
-    cost_function = 'rmse'
-    rtm_params = Path('../parameters/prosail_s2.csv')
-    lut_size = 50000
-
-    lut_config = LookupTableBasedInversion(
-        traits=traits,
-        n_solutions=n_solutions,
-        cost_function=cost_function,
-        lut_size=lut_size,
-        rtm_params=rtm_params
     )
 
     # S2 configuration
@@ -234,27 +249,60 @@ if __name__ == '__main__':
     date_start = date(2022,2,1)
     date_end = date(2022,7,1)
 
-    # define area of interest
-    area_of_interest = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_reckenholz_kloten_airport_4326.geojson'
-        # '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326.geojson'
-    )
-    unique_feature_id='name'
-    aoi = gpd.read_file(area_of_interest)
-    aoi[unique_feature_id] = area_of_interest.name.split('.')[0]
+    # unique_feature_id='name'
+    # aoi = gpd.read_file(area_of_interest)
+    aoi['name'] = 'Strickhof' # area_of_interest.name.split('.')[0]
 
     # spatial resolution of output product and spatial resampling method
     spatial_resolution = 10. # meters
     resampling_method = cv2.INTER_NEAREST_EXACT
 
-    traits_from_s2(
-        date_start=date_start,
-        date_end=date_end,
-        aoi=aoi,
-        rtm_config=lut_config,
-        scene_cloud_cover_threshold=scene_cloud_cover_threshold,
-        spatial_resolution=spatial_resolution,
-        resampling_method=resampling_method,
-        unique_feature_id=unique_feature_id,
-        output_dir=output_dir
-    )
+    # set RTM parameters and traits to retrieve
+    traits = ['lai', 'cab']
+    rtm_params = Path('../parameters/prosail_s2.csv')
+    # RTM configurations to test
+    n_solutions = [0.05, 0.1, 0.2]
+    cost_functions = ['rmse', 'squared_sum_of_differences', 'contrast_function']
+    lut_sizes = [50000, 75000, 100000, 125000]
+
+    # get all possible combinations
+    combinations = list(itertools.product(*[n_solutions, cost_functions, lut_sizes]))
+
+    # loop over combinations and run the inversion for each of them
+    for combination in combinations:
+
+        n_solution = combination[0]
+        cost_function = combination[1]
+        lut_size = combination[2]
+
+        logger.info(
+            f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+        )
+
+        # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
+        output_dir_combination = output_dir.joinpath(f'{cost_function}_{lut_size}_{int(n_solution*100)}')
+        output_dir_combination.mkdir(exist_ok=True)
+
+        lut_config = LookupTableBasedInversion(
+            traits=traits,
+            n_solutions=n_solution,
+            cost_function=cost_function,
+            lut_size=lut_size,
+            rtm_params=rtm_params
+        )
+    
+        traits_from_s2(
+            date_start=date_start,
+            date_end=date_end,
+            aoi=aoi,
+            rtm_config=lut_config,
+            scene_cloud_cover_threshold=scene_cloud_cover_threshold,
+            spatial_resolution=spatial_resolution,
+            resampling_method=resampling_method,
+            unique_feature_id='name',
+            output_dir=output_dir_combination
+        )
+
+        logger.info(
+            f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+        )
