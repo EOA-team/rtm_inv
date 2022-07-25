@@ -2,6 +2,8 @@
 A base class for configuring the RTM inversion and trait retrieval
 '''
 
+import numpy as np
+
 from pathlib import Path
 from typing import List, Optional
 
@@ -60,7 +62,9 @@ class LookupTableBasedInversion(RTMConfig):
         Class constructor
 
         :param n_solutions:
-            number of solutions to use for lookup-table based inversion
+            number of solutions to use for lookup-table based inversion. Can
+            be provided as relative share of spectra in the lookup-table (then
+            provide a number between 0 and 1) or in absolute numbers.
         :param cost_function:
             name of the cost-function to evaluate similarity between
             observed and simulated spectra
@@ -73,10 +77,21 @@ class LookupTableBasedInversion(RTMConfig):
         """
         # call constructor of super-class
         super().__init__(**kwargs)
-        self.n_solutions = n_solutions
         self.cost_function = cost_function
         self.method = method
         self.lut_size = lut_size
+
+        # adopt number of solutions if given in relative numbers [0,1]
+        if 0 < n_solutions <= 1:
+            self.n_solutions = int(np.round(n_solutions * lut_size, 0))
+        elif n_solutions < 0:
+            raise ValueError('The number of solutions must not be negative')
+        elif n_solutions > self.lut_size:
+            raise ValueError(
+                'The number of solutions must not be greater than the lookup-table size'
+            )
+        else:
+            self.n_solutions = n_solutions
 
         @property
         def lut_size() -> int:
