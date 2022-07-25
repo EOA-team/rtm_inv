@@ -68,6 +68,8 @@ def inv_img(
                     delta[idx] = np.sum(
                         -np.log10(lut[idx,:] / image_ref) + lut[idx,:] / image_ref
                     )
+                elif cost_function == 'squared_sum_of_differences':
+                    delta[idx] = np.sum((lut[idx,:] - image_ref)**2)
             # find the smallest errors between simulated and observed spectra
             # we need the row index of the corresponding entries in the LUT
             delta_sorted = np.argsort(delta)
