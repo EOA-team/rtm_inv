@@ -230,7 +230,8 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['Strickhof']
+    farm_name = 'Arenenberg'
+    farms = [farm_name]
     
     # get field parcel geometries organized by farm
     farm_gdf_dict = get_farms(data_dir, farms, year)
@@ -251,7 +252,7 @@ if __name__ == '__main__':
 
     # unique_feature_id='name'
     # aoi = gpd.read_file(area_of_interest)
-    aoi['name'] = 'Strickhof' # area_of_interest.name.split('.')[0]
+    aoi['name'] = farm_name
 
     # spatial resolution of output product and spatial resampling method
     spatial_resolution = 10. # meters
