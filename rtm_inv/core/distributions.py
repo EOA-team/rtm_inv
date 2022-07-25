@@ -77,5 +77,7 @@ class Distributions(object):
                 size=n_samples
             )
         elif distribution == 'Gaussian':
-            pass
-            
+            a, b = (self.min_value - self.mean_value) / self.std_value, \
+                (self.max_value - self.mean_value) / self.std_value
+            X = truncnorm(a, b, loc=self.mean_value, scale=self.std_value)
+            return X.rvs(n_samples)
