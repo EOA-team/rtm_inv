@@ -146,7 +146,8 @@ def traits_from_s2(
                 viewing_zenith_angle=viewing_zenith_angle,
                 solar_azimuth_angle=solar_azimuth_angle,
                 viewing_azimuth_angle=viewing_azimuth_angle,
-                lut_size=rtm_config.lut_size
+                lut_size=rtm_config.lut_size,
+                sampling_method=rtm_config.method
             )
 
             band_names = feature_scene.band_names
@@ -167,7 +168,6 @@ def traits_from_s2(
             else:
                 mask = np.zeros(shape=(s2_spectra.shape[1], s2_spectra.shape[2]), dtype='uint8')
                 mask = mask.as_type('bool')
-            
 
             logger.info(f'Feature {feature_id}: Starting inversion of {metadata.product_uri.iloc[0]}')
             lut_idxs = inv_img(
@@ -239,8 +239,9 @@ if __name__ == '__main__':
 
     # output directory for writing trait images
     output_dir = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data'
+        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS'
     )
+    output_dir.mkdir(exist_ok=True)
 
     # S2 configuration
     # maximum scene-cloud cover
@@ -260,7 +261,8 @@ if __name__ == '__main__':
 
     # set RTM parameters and traits to retrieve
     traits = ['lai', 'cab']
-    rtm_params = Path('../parameters/prosail_s2.csv')
+    rtm_params = Path('../parameters/prosail_frs.csv')
+    method = 'FRS'
     # RTM configurations to test
     n_solutions = [0.05, 0.1, 0.2]
     cost_functions = ['rmse', 'squared_sum_of_differences', 'contrast_function']
@@ -289,7 +291,8 @@ if __name__ == '__main__':
             n_solutions=n_solution,
             cost_function=cost_function,
             lut_size=lut_size,
-            rtm_params=rtm_params
+            rtm_params=rtm_params,
+            method=method
         )
     
         traits_from_s2(
