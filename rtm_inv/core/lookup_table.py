@@ -11,6 +11,7 @@ from typing import List, Optional, Union
 
 from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
+from numba.core.types import none
 
 sampling_methods: List[str] = ['LHS']
 
@@ -74,6 +75,7 @@ class LookupTable(object):
         Currently supported sampling schemes are:
 
         - Latin Hypercube Sampling (LHS)
+        - Fully Random Sampling (FRS)
         - ...
 
         All parameters (traits) are sampled, whose distribution is not set
@@ -120,6 +122,31 @@ class LookupTable(object):
             for trait_name in trait_names:
                 traits_lhc[trait_name] = traits_lhc[trait_name] * \
                     traits[trait_name]['Max'] + traits[trait_name]['Min']
+            sample_traits = traits_lhc
+        elif method.upper() == 'FRS':
+            # fully random sampling within the trait ranges specified
+            # drawing a random sample for each trait
+            frs_matrix = np.empty((num_samples, n_traits), dtype=np.float32)
+            traits_frs = pd.DataFrame(frs_matrix)
+            traits_frs.columns = trait_names
+            for trait_name in trait_names:
+                mode = None
+                if 'Mode' in traits[trait_name].index:
+                    mode = traits[trait_name]['Mode']
+                std = None
+                if 'Std' in traits[trait_name].index:
+                    std = traits[trait_name]['Std']
+                dist = Distributions(
+                    min_value=traits[trait_name]['Min'],
+                    max_value=traits[trait_name]['Max'],
+                    mean_value=mode,
+                    std_value=std
+                )
+                traits_frs[trait_name] = dist.sample(
+                    distribution=traits[trait_name]['Distribution'],
+                    n_samples=num_samples
+                )
+            sample_traits = traits_frs
         else:
             raise NotImplementedError(f'{method} not found')
 
@@ -128,10 +155,10 @@ class LookupTable(object):
         for constant_trait in constant_trait_names:
             # for constant traits the value in the min column is used
             # (actually min and max should be set to the same value)
-            traits_lhc[constant_trait] = constant_traits[constant_trait]['Min']
+            sample_traits[constant_trait] = constant_traits[constant_trait]['Min']
 
         # set samples to instance variable
-        self.samples = traits_lhc
+        self.samples = sample_traits
 
 def generate_lut(
         sensor: str,
@@ -145,19 +172,61 @@ def generate_lut(
         viewing_azimuth_angle: Optional[float] = None
     ) -> pd.DataFrame:
     """
+    Generates a Lookup-Table (LUT) based on radiative transfer model input parameters.
+
+    IMPORTANT:
+        Depending on the RTM and the size of the LUT the generation of a LUT
+        might take a while!
+
+    :param sensor:
+        name of the sensor for which the simulated spectra should be resampled.
+        See `rtm_inv.core.sensors.Sensors` for a list of sensors currently implemented.
+    :param lut_params:
+        lookup-table parameters with mininum and maximum range (always required),
+        type of distribution (important to indicate which parameters are constant),
+        mode and std (for Gaussian distributions).
+    :param lut_size:
+        number of items (spectra) to simulate in the LUT
+    :param rtm_name:
+        name of the RTM to call.
+    :param sampling_method:
+        sampling method for generating the input parameter space of the LUT. 'LHS'
+        (latin hypercube sampling) by default.
+    :param solar_zenith_angle:
+        solar zenith angle as fixed scene-wide value (optional) in degrees.
+    :param viewing_zenith_angle:
+        viewing (observer) zenith angle as fixed scene-wide value (optional) in degrees.
+    :param solar_azimuth_angle:
+        solar azimuth angle as fixed scene-wide value (optional) in deg C.
+    :param viewing_azimuth_angle:
+        viewing (observer) azimuth angle as fixed scene-wide value (optional) in deg C.
+    :returns:
+        input parameters and simulated spectra as `DataFrame`.
     """
+    # read parameters from CSV if not provided as a DataFrame
     if isinstance(lut_params, Path):
         lut_params = pd.read_csv(lut_params)
 
-    # overwrite angles in LUT DataFrame
-    lut_params.loc[lut_params['Parameter'] == 'tts','Min'] = solar_zenith_angle
-    lut_params.loc[lut_params['Parameter'] == 'tts','Max'] = solar_zenith_angle
-    lut_params.loc[lut_params['Parameter'] == 'tto', 'Min'] = viewing_zenith_angle
-    lut_params.loc[lut_params['Parameter'] == 'tto', 'Max'] = viewing_zenith_angle
-    # calculate relative azimuth (psi)
-    psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
-    lut_params.loc[lut_params['Parameter'] == 'psi', 'Min'] = psi
-    lut_params.loc[lut_params['Parameter'] == 'psi', 'Max'] = psi
+    # overwrite angles in LUT DataFrame if provided as fixed values
+    if solar_zenith_angle is not None:
+        lut_params.loc[lut_params['Parameter'] == 'tts','Min'] = solar_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == 'tts','Max'] = solar_zenith_angle
+    if viewing_zenith_angle is not None:
+        lut_params.loc[lut_params['Parameter'] == 'tto', 'Min'] = viewing_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == 'tto', 'Max'] = viewing_zenith_angle
+    # calculate relative azimuth (psi) if viewing angles are passed
+    if viewing_azimuth_angle is not None and solar_azimuth_angle is not None:
+        psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
+        lut_params.loc[lut_params['Parameter'] == 'psi', 'Min'] = psi
+        lut_params.loc[lut_params['Parameter'] == 'psi', 'Max'] = psi
+
+    # 'mode' and 'std' are optional columns
+    further_columns = ['Mode', 'Std']
+    for further_column in further_columns:
+        if further_column in lut_params.columns:
+            lut_params.loc[lut_params['Parameter'] == 'tts', further_column] = solar_zenith_angle
+            lut_params.loc[lut_params['Parameter'] == 'tto', further_column] = viewing_zenith_angle
+            lut_params.loc[lut_params['Parameter'] == 'psi', further_column] = psi
 
     # get input parameter samples first
     lut = LookupTable(params=lut_params)
