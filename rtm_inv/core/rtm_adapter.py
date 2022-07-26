@@ -112,7 +112,7 @@ class RTM:
         centers_prosail = np.arange(400,2501,1)
         fwhm_prosail = np.ones(centers_prosail.size)
         # initialize spectral sampler object to perform the spectral
-        # convolution from 1nm ProSAIL output to Sentinel-2 spectral
+        # convolution from 1nm ProSAIL output to the sensor's spectral
         # resolution using a Gaussian spectral response function
         resampler = BandResampler(
             centers1=centers_prosail,
