@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from rtm_inv.inversion import inv_img, retrieve_traits
-from scipy.stats import linregress
+from scipy.stats import linregress, kstest
 from sklearn.metrics import mean_squared_error
 
 plt.style.use('ggplot')
@@ -66,10 +66,13 @@ if __name__ == '__main__':
             s2_val['greenLAI'].values, trait_vals[0,:,0], squared=False
         )
         nrmse = rmse / s2_val['greenLAI'].mean() * 100
+
+        # linear regression
         slope, intercept, r_value, p_value, std_err = linregress(
             s2_val['greenLAI'].values,
             trait_vals[0,:,0]
         )
+
         textstr = f'RMSE = {np.round(rmse,2)}' + r'$m^2$/$m^2$'
         textstr += f'\nnRMSE = {np.round(nrmse,2)}%\n'
         textstr += r'$R^2$ = ' + f'{np.round(r_value**2,2)}'
