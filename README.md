@@ -1,9 +1,7 @@
 # rtm_inv
 
-`rtm_inv` is a light-weight module to perform lookup-table based inversion
-of the radiative transfer models ProSAIL and (in the future) SPART.
+IMPORTANT: This repository is work in progress! **Expect anything but stable code**!
 
-`rtm_inv` is undergoing current developments, therefore, it might be not stable.
-
-The sub-package provided here is for reproducible reasons but might differ from
-any future versions of `rtm_inv`.
+Besides that `rtm_inv` is:
+- a light-weight module to perform lookup-table based inversion of the radiative transfer models ProSAIL and (in the future) SPART.
+- an attempt to build a  model to derive functional traits such as the leaf area index (LAI) from satellite imagery
