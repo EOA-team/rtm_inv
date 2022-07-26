@@ -25,7 +25,6 @@ class Distributions(object):
             max_value: Union[int,float],
             mean_value: Optional[Union[int,float]] = None,
             std_value: Optional[Union[int,float]] = None
-            
         ):
         """
         Creates a new ``Distributions`` class to use for sampling
@@ -46,9 +45,9 @@ class Distributions(object):
         """
         if min_value > max_value:
             raise ValueError('Minimum cannot be greater than maximum')
-        if mean_value is None:
+        if mean_value is None or np.isnan(mean_value):
             mean_value = min_value + 0.5 * (max_value - min_value)
-        if std_value is None:
+        if std_value is None or np.isnan(std_value):
             std_value = 0.5 * (max_value - min_value)
         self.min_value = min_value
         self.max_value = max_value
