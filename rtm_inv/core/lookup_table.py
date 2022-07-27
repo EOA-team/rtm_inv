@@ -160,6 +160,49 @@ class LookupTable(object):
         # set samples to instance variable
         self.samples = sample_traits
 
+def _setup(
+        lut_params: pd.DataFrame,
+        rtm_name: str,
+        solar_zenith_angle: Optional[float] = None,
+        viewing_zenith_angle: Optional[float] = None,
+        solar_azimuth_angle: Optional[float] = None,
+        viewing_azimuth_angle: Optional[float] = None
+    ) -> pd.DataFrame:
+    """
+    Setup LUT for RTM (modification of angles and names if required)
+    """
+    if rtm_name == 'prosail':
+        sol_angle = 'tts'   # solar zenith
+        obs_angle = 'tto'   # observer zenith
+        rel_angle = 'psi'   # relative azimuth
+    elif rtm_name == 'spart':
+        sol_angle = 'sol_angle'
+        obs_angle = 'obs_angle'
+        rel_angle = 'rel_angle'
+
+    # overwrite angles in LUT DataFrame if provided as fixed values
+    if solar_zenith_angle is not None:
+        lut_params.loc[lut_params['Parameter'] == sol_angle,'Min'] = solar_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == sol_angle,'Max'] = solar_zenith_angle
+    if viewing_zenith_angle is not None:
+        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Min'] = viewing_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Max'] = viewing_zenith_angle
+    # calculate relative azimuth (psi) if viewing angles are passed
+    if viewing_azimuth_angle is not None and solar_azimuth_angle is not None:
+        psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
+        lut_params.loc[lut_params['Parameter'] == rel_angle, 'Min'] = psi
+        lut_params.loc[lut_params['Parameter'] == rel_angle, 'Max'] = psi
+
+    # 'mode' and 'std' are optional columns
+    further_columns = ['Mode', 'Std']
+    for further_column in further_columns:
+        if further_column in lut_params.columns:
+            lut_params.loc[lut_params['Parameter'] == sol_angle, further_column] = solar_zenith_angle
+            lut_params.loc[lut_params['Parameter'] == obs_angle, further_column] = viewing_zenith_angle
+            lut_params.loc[lut_params['Parameter'] == rel_angle, further_column] = psi
+
+    return lut_params
+
 def generate_lut(
         sensor: str,
         lut_params: Union[Path, pd.DataFrame],
@@ -169,7 +212,8 @@ def generate_lut(
         solar_zenith_angle: Optional[float] = None,
         viewing_zenith_angle: Optional[float] = None,
         solar_azimuth_angle: Optional[float] = None,
-        viewing_azimuth_angle: Optional[float] = None
+        viewing_azimuth_angle: Optional[float] = None,
+        **kwargs
     ) -> pd.DataFrame:
     """
     Generates a Lookup-Table (LUT) based on radiative transfer model input parameters.
@@ -200,6 +244,8 @@ def generate_lut(
         solar azimuth angle as fixed scene-wide value (optional) in deg C.
     :param viewing_azimuth_angle:
         viewing (observer) azimuth angle as fixed scene-wide value (optional) in deg C.
+    :param kwargs:
+        optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
         input parameters and simulated spectra as `DataFrame`.
     """
@@ -207,30 +253,12 @@ def generate_lut(
     if isinstance(lut_params, Path):
         lut_params = pd.read_csv(lut_params)
 
-    # overwrite angles in LUT DataFrame if provided as fixed values
-    if solar_zenith_angle is not None:
-        lut_params.loc[lut_params['Parameter'] == 'tts','Min'] = solar_zenith_angle
-        lut_params.loc[lut_params['Parameter'] == 'tts','Max'] = solar_zenith_angle
-    if viewing_zenith_angle is not None:
-        lut_params.loc[lut_params['Parameter'] == 'tto', 'Min'] = viewing_zenith_angle
-        lut_params.loc[lut_params['Parameter'] == 'tto', 'Max'] = viewing_zenith_angle
-    # calculate relative azimuth (psi) if viewing angles are passed
-    if viewing_azimuth_angle is not None and solar_azimuth_angle is not None:
-        psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
-        lut_params.loc[lut_params['Parameter'] == 'psi', 'Min'] = psi
-        lut_params.loc[lut_params['Parameter'] == 'psi', 'Max'] = psi
-
-    # 'mode' and 'std' are optional columns
-    further_columns = ['Mode', 'Std']
-    for further_column in further_columns:
-        if further_column in lut_params.columns:
-            lut_params.loc[lut_params['Parameter'] == 'tts', further_column] = solar_zenith_angle
-            lut_params.loc[lut_params['Parameter'] == 'tto', further_column] = viewing_zenith_angle
-            lut_params.loc[lut_params['Parameter'] == 'psi', further_column] = psi
-
+    # prepare LUTs for RTMs
+    lut_params = _setup(lut_params, rtm_name, solar_zenith_angle, viewing_zenith_angle,
+                        solar_azimuth_angle, viewing_azimuth_angle)
     # get input parameter samples first
     lut = LookupTable(params=lut_params)
-    lut.generate_samples(lut_size, sampling_method)
+    lut.generate_samples(num_samples=lut_size, method=sampling_method, **kwargs)
 
     # and run the RTM in forward mode in the second step
     # outputs get resampled to the spectral resolution of the sensor
