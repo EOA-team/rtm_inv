@@ -30,7 +30,6 @@ from rtm_inv.core.inversion import inv_img, retrieve_traits
 from rtm_inv.core.lookup_table import generate_lut
 
 logger = get_settings().logger
-
 warnings.filterwarnings('ignore')
 
 def traits_from_s2(
@@ -39,6 +38,7 @@ def traits_from_s2(
         aoi: Union[Path, gpd.GeoDataFrame],
         rtm_config: RTMConfig,
         output_dir: Path,
+        lut_dir: Path,
         scene_cloud_cover_threshold: Optional[int] = 80,
         spatial_resolution: Optional[float] = 10.,
         resampling_method: Optional[int] = cv2.INTER_NEAREST_EXACT,
@@ -65,6 +65,9 @@ def traits_from_s2(
         radiative transfer model configuration (forward and inverse)
     :param output_dir:
         directory where to save the trait results (geoTiffs) to
+    :param lut_dir:
+        directory where to save lookup-tables to in order to speed
+        up calculations (LUTs might be reused several times)
     :param scene_cloud_cover_threshold:
         maximum scene-wide cloud cover threshold to use in % (0-100). 
         f the `processing_level` is set to L2A, clouds, shadows
@@ -138,17 +141,26 @@ def traits_from_s2(
             full_names = {'S2A': 'Sentinel2A', 'S2B': 'Sentinel2B'}
             platform = full_names[platform]
 
-            # call function to generate lookup-table
-            lut = generate_lut(
-                sensor=platform,
-                lut_params=rtm_config.rtm_params,
-                solar_zenith_angle=solar_zenith_angle,
-                viewing_zenith_angle=viewing_zenith_angle,
-                solar_azimuth_angle=solar_azimuth_angle,
-                viewing_azimuth_angle=viewing_azimuth_angle,
-                lut_size=rtm_config.lut_size,
-                sampling_method=rtm_config.method
-            )
+            # call function to generate lookup-table but first check if
+            # does not exist already
+            fname_lut = metadata.product_uri.values[0].replace('.SAFE', '_lut.pkl')
+            fpath_lut = lut_dir.joinpath(fname_lut)
+            if not fpath_lut.exists():
+                # LUT does not exist; calculate it and save to pickle
+                lut = generate_lut(
+                    sensor=platform,
+                    lut_params=rtm_config.rtm_params,
+                    solar_zenith_angle=solar_zenith_angle,
+                    viewing_zenith_angle=viewing_zenith_angle,
+                    solar_azimuth_angle=solar_azimuth_angle,
+                    viewing_azimuth_angle=viewing_azimuth_angle,
+                    lut_size=rtm_config.lut_size,
+                    sampling_method=rtm_config.method
+                )
+                lut.to_pickle(fpath_lut)
+            else:
+                # LUT exists, read it from pickle
+                lut = pd.read_pickle(fpath_lut)
 
             band_names = feature_scene.band_names
             if 'SCL' in band_names: band_names.remove('SCL')
@@ -230,30 +242,15 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farm_name = 'Arenenberg'
-    farms = [farm_name]
-    
-    # get field parcel geometries organized by farm
-    farm_gdf_dict = get_farms(data_dir, farms, year)
-    aoi = farm_gdf_dict[farms[0]]
-
-    # output directory for writing trait images
-    output_dir = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS'
-    )
-    output_dir.mkdir(exist_ok=True)
+    farms = ['Arenenberg', 'Strickhof', 'Witzwil', 'SwissFutureFarm']
 
     # S2 configuration
     # maximum scene-cloud cover
     scene_cloud_cover_threshold = 50.
 
     # define start and end of the time series
-    date_start = date(2022,2,1)
-    date_end = date(2022,7,1)
-
-    # unique_feature_id='name'
-    # aoi = gpd.read_file(area_of_interest)
-    aoi['name'] = farm_name
+    date_start = date(2022,7,1)
+    date_end = date(2022,7,10)
 
     # spatial resolution of output product and spatial resampling method
     spatial_resolution = 10. # meters
@@ -271,42 +268,64 @@ if __name__ == '__main__':
     # get all possible combinations
     combinations = list(itertools.product(*[n_solutions, cost_functions, lut_sizes]))
 
-    # loop over combinations and run the inversion for each of them
-    for combination in combinations:
+    # output directory for writing trait images
+    output_dir = Path(
+        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS'
+    )
+    output_dir.mkdir(exist_ok=True)
 
-        n_solution = combination[0]
-        cost_function = combination[1]
-        lut_size = combination[2]
+    # save lookup-tables so they do no have to be recalculated
+    lut_dir = output_dir.joinpath('lookup_tables')
+    lut_dir.mkdir(exist_ok=True)
 
-        logger.info(
-            f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
-        )
+    # loop over farms and test inversion settings
+    for farm_name in farms:
+        # get field parcel geometries organized by farm
+        farm_gdf_dict = get_farms(data_dir, [farm_name], year)
+        aoi = farm_gdf_dict[farms[0]]
+        aoi['name'] = farm_name
 
-        # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
-        output_dir_combination = output_dir.joinpath(f'{cost_function}_{lut_size}_{int(n_solution*100)}')
-        output_dir_combination.mkdir(exist_ok=True)
+        # lookup-tables are stored per farm
+        lut_dir_farm = lut_dir.joinpath(farm_name)
+        lut_dir_farm.mkdir(exist_ok=True)
 
-        lut_config = LookupTableBasedInversion(
-            traits=traits,
-            n_solutions=n_solution,
-            cost_function=cost_function,
-            lut_size=lut_size,
-            rtm_params=rtm_params,
-            method=method
-        )
+        # loop over combinations and run the inversion for each of them
+        for combination in combinations:
     
-        traits_from_s2(
-            date_start=date_start,
-            date_end=date_end,
-            aoi=aoi,
-            rtm_config=lut_config,
-            scene_cloud_cover_threshold=scene_cloud_cover_threshold,
-            spatial_resolution=spatial_resolution,
-            resampling_method=resampling_method,
-            unique_feature_id='name',
-            output_dir=output_dir_combination
-        )
-
-        logger.info(
-            f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
-        )
+            n_solution = combination[0]
+            cost_function = combination[1]
+            lut_size = combination[2]
+    
+            logger.info(
+                f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+            )
+    
+            # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
+            output_dir_combination = output_dir.joinpath(f'{cost_function}_{lut_size}_{int(n_solution*100)}')
+            output_dir_combination.mkdir(exist_ok=True)
+    
+            lut_config = LookupTableBasedInversion(
+                traits=traits,
+                n_solutions=n_solution,
+                cost_function=cost_function,
+                lut_size=lut_size,
+                rtm_params=rtm_params,
+                method=method
+            )
+        
+            traits_from_s2(
+                date_start=date_start,
+                date_end=date_end,
+                aoi=aoi,
+                rtm_config=lut_config,
+                scene_cloud_cover_threshold=scene_cloud_cover_threshold,
+                spatial_resolution=spatial_resolution,
+                resampling_method=resampling_method,
+                unique_feature_id='name',
+                output_dir=output_dir_combination,
+                lut_dir=lut_dir_farm
+            )
+    
+            logger.info(
+                f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+            )
