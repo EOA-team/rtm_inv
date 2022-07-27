@@ -6,13 +6,17 @@ Adapter to radiative transfer models (RTMs). RTMs currently implemented
 '''
 
 import numpy as np
+import pandas as pd
 import prosail
+import spart
 
 from spectral import BandResampler
 from typing import Optional
 
 from rtm_inv.core.sensors import Sensors
 
+class RTMRunTimeError(Exception):
+    pass
 
 class SPARTParameters:
     """
@@ -73,7 +77,7 @@ class RTM:
         """
         if lut.samples.empty:
             raise ValueError('LUT must not be empty')
-        if rtm not in ['prosail', 'SPART']:
+        if rtm not in ['prosail', 'spart']:
             raise ValueError('Unknown RTM name')
         if n_step <= 0:
             raise ValueError('Steps must be > 0')
@@ -82,9 +86,72 @@ class RTM:
         self._rtm = rtm
         self._nstep = n_step
 
-    def _run_prosail(self, sensor: str, **kwargs) -> None:
+    def _run_spart(self, sensor: str, output: Optional[str] = 'R_TOC',
+                   doy: Optional[int] = 100) -> None:
+        """
+        Runs the SPART RTM
+
+        :param sensor:
+            name of the sensor for which to simulate the spectra
+        :param output:
+            output of the simulation to use. Top-of-Canopy reflectance (R_TOC)
+            by default. Further options are 'R_TOA' (top-of-atmosphere reflectance)
+            and 'L_TOA' (top-of-atmosphere radiance)
+        """
+        # get sensor
+        try:
+            sensor = eval(f'Sensors.{sensor}()')
+        except Exception as e:
+            raise Exception(f'No such sensor: {sensor}: {e}')
+        # get band names
+        sensor_bands = sensor.band_names
+        sensor_spart_name = sensor.name
+        self._lut.samples[sensor_bands] = np.nan
+
+        # get LUT entries for the sub-models of SPART
+        # leaf model (PROSPECT-5 or PROSPECT-PRO)
+        leaf_traits = SPARTParameters.prospect_5d
+        if 'PROT' not in self._lut.samples.columns:
+            leaf_traits.remove('PROT')
+        if 'CBC' not in self._lut.samples.columns:
+            leaf_traits.remove('CBC')
+        if 'Cdm' not in self._lut.samples.columns:
+            leaf_traits.remove('Cdm')
+        lut_leafbio = self._lut.samples[SPARTParameters.prospect_5d].copy()
+        # soil model (SMB)
+        lut_soilpar = self._lut.samples[SPARTParameters.SMB].copy()
+        # canopy model (SAILH)
+        lut_canopy = self._lut.samples[SPARTParameters.sailh].copy()
+        # angles
+        lut_angles = self._lut.samples[SPARTParameters.angles].copy()
+        # atmosphere model (SMAC)
+        lut_atm = self._lut.samples[SPARTParameters.SMAC].copy()
+
+        # iterate through LUT and run SPART
+        for idx in range(self._lut.samples.shape[0]):
+            leafbio = spart.LeafBiology(**lut_leafbio.iloc[idx].to_dict())
+            canopy = spart.CanopyStructure(**lut_canopy.iloc[idx].to_dict())
+            soilpar = spart.SoilParameters(**lut_soilpar.iloc[idx].to_dict())
+            angles = spart.Angles(**lut_angles.iloc[idx].to_dict())
+            atm = spart.AtmosphericProperties(**lut_atm.iloc[idx].to_dict())
+            spart_model = spart.SPART(
+                soilpar,
+                leafbio,
+                canopy,
+                atm,
+                angles,
+                sensor=sensor_spart_name,
+                DOY=doy
+            )
+            spart_sim = spart_model.run()
+            self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
+
+    def _run_prosail(self, sensor: str) -> None:
         """
         Runs the ProSAIL RTM
+
+        :param sensor:
+            name of the sensor for which to simulate the spectra
         """
         # check if Prospect version
         if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
@@ -95,7 +162,6 @@ class RTM:
             raise ValueError('Cannot determine Prospect Version')
 
         # get sensor
-        traits = self._lut.samples.columns
         try:
             sensor = eval(f'Sensors.{sensor}()')
         except Exception as e:
@@ -123,34 +189,40 @@ class RTM:
 
         # iterate through LUT and run ProSAIL
         spectrum = None
-        traits = self._lut.samples[traits].copy()
-        for idx, record in traits.iterrows():
+        traits = self._lut.samples.columns
+        lut = self._lut.samples[traits].copy()
+        for idx, record in lut.iterrows():
+            # set the PROSPECT version
             record_inp = record.to_dict()
             record_inp.update({
                 'prospect_version': prospect_version
             })
-            record.update(kwargs)
             # run ProSAIL
             try:
                 spectrum = prosail.run_prosail(**record_inp)
             except Exception as e:
-                print(e)
+                raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
             if (idx+1)%self._nstep == 0:
                 print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
 
-            # resample to spectral resolution of sensor
+            # resample to the spectral resolution of sensor
             sensor_spectrum = resampler(spectrum)
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
-    def simulate_spectra(self, sensor: str, **kwargs):
+    def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:
         """
         Simulation of spectra for all entries in the lookup-table
 
         :paran sensor:
             name of the sensor for which to generate spectra
+        :param kwargs:
+            RTM-specific optional keyword arguments
+        :returns:
+            lookup-table with RTM simulated spectra as `DataFrame`
         """
         # call different RTMs
         if self._rtm == 'prosail':
             self._run_prosail(sensor=sensor, **kwargs)
-
+        elif self._rtm == 'spart':
+            self._run_spart(sensor=sensor, **kwargs)
         return self._lut.samples
