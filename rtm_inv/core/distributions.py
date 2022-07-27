@@ -11,10 +11,10 @@ from typing import List, Optional, Union
 class Distributions(object):
     """
     Class with statistical distributions for drawning RTM
-    samples from a set of input parameters
+    samples from a set of input parameters.
 
     For each RTM parameter, min, max and type of distribution
-    must be passed
+    must be passed.
     """
 
     distributions: List[str] = ['Gaussian', 'Uniform']
