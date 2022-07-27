@@ -155,7 +155,8 @@ def traits_from_s2(
                     solar_azimuth_angle=solar_azimuth_angle,
                     viewing_azimuth_angle=viewing_azimuth_angle,
                     lut_size=rtm_config.lut_size,
-                    sampling_method=rtm_config.method
+                    sampling_method=rtm_config.method,
+                    rtm_name=rtm_config.rtm
                 )
                 lut.to_pickle(fpath_lut)
             else:
@@ -242,23 +243,24 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['Strickhof', 'Witzwil', 'SwissFutureFarm']
+    farms = ['Arenenberg', 'Strickhof', 'Witzwil', 'SwissFutureFarm']
 
     # S2 configuration
     # maximum scene-cloud cover
     scene_cloud_cover_threshold = 50.
 
     # define start and end of the time series
-    date_start = date(2022,2,1)
-    date_end = date(2022,7,1)
+    date_start = date(2022,7,1)
+    date_end = date(2022,7,10)
 
     # spatial resolution of output product and spatial resampling method
     spatial_resolution = 10. # meters
     resampling_method = cv2.INTER_NEAREST_EXACT
 
     # set RTM parameters and traits to retrieve
-    traits = ['lai', 'cab']
-    rtm_params = Path('../parameters/prosail_frs.csv')
+    traits = ['LAI', 'Cab']
+    rtm_name = 'spart'
+    rtm_params = Path('../parameters/spart_frs.csv')
     method = 'FRS'
     # RTM configurations to test
     n_solutions = [0.05, 0.1, 0.2]
@@ -270,7 +272,7 @@ if __name__ == '__main__':
 
     # output directory for writing trait images
     output_dir = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS'
+        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS_SPART'
     )
     output_dir.mkdir(exist_ok=True)
 
@@ -310,7 +312,8 @@ if __name__ == '__main__':
                 cost_function=cost_function,
                 lut_size=lut_size,
                 rtm_params=rtm_params,
-                method=method
+                method=method,
+                rtm=rtm_name
             )
         
             traits_from_s2(
