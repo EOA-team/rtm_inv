@@ -1,5 +1,5 @@
 '''
-Distributions for sampling RTM parameters
+Distributions for sampling RTM parameters.
 '''
 
 import numpy as np
