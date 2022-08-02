@@ -262,6 +262,7 @@ if __name__ == '__main__':
     method = 'FRS'
     # RTM configurations to test
     n_solutions = [1, 10, 100, 1000, 0.05, 0.1, 0.2]
+    is_percentage = [False, False, False, False, True, True, True]
     cost_functions = ['rmse', 'squared_sum_of_differences', 'contrast_function']
     lut_sizes = [25000, 50000, 75000, 100000, 125000]
 
@@ -295,13 +296,27 @@ if __name__ == '__main__':
             n_solution = combination[0]
             cost_function = combination[1]
             lut_size = combination[2]
+
+            n_solution_idx = n_solutions.index(n_solution)
+            n_solution_is_percentage = is_percentage[n_solution_idx]
+
+            if n_solution_is_percentage:
+                n_solutions_str = str(int(n_solution * 100))
+                percentage_str = '%'
+            else:
+                n_solutions_str = str(int(n_solution))
+                percentage_str = ''
+                
     
             logger.info(
-                f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+                f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; ' + \
+                f'Number of solutions: {n_solutions_str}{percentage_str}'
             )
     
             # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
-            output_dir_combination = output_dir.joinpath(f'{cost_function}_{lut_size}_{int(n_solution*100)}')
+            output_dir_combination = output_dir.joinpath(
+                f'{cost_function}_{lut_size}_{n_solutions_str}'
+            )
             output_dir_combination.mkdir(exist_ok=True)
 
             # LUT directory for the given LUT size
