@@ -190,6 +190,8 @@ class RTM:
         # iterate through LUT and run ProSAIL
         spectrum = None
         traits = self._lut.samples.columns
+        # drop band columns B01, B02, etc.
+        traits = [x for x in traits if not x.startswith('B')]
         lut = self._lut.samples[traits].copy()
         for idx, record in lut.iterrows():
             # set the PROSPECT version
