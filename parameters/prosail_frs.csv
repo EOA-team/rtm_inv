@@ -6,8 +6,8 @@ ant,0,5,,,Gaussian
 cbrown,0,1,,,Uniform
 cw,0,0.07,,,Gaussian
 cm,0.003,0.01,0.005,0.005,Gaussian
-lai,0,8,2,3,Uniform
-lidfa,30,70,45,30,Uniform
+lai,0,8,2,3,Gaussian
+lidfa,30,70,45,30,Gaussian
 lidfb,0,0,,,Constant
 hspot,0.01,0.5,,,Uniform
 rsoil,0,1,,,Uniform

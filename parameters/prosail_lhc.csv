@@ -1,11 +1,11 @@
 Parameter,Min,Max,Distribution
 n,1,2.5,Gaussian
-cab,0,80,Gaussian
+cab,20,90,Gaussian
 car,0,15,Gaussian
 ant,0,5,Gaussian
 cbrown,0,1,Uniform
 cw,0,0.07,Gaussian
-cm,0,0.01,Gaussian
+cm,0.003,0.01,Gaussian
 lai,0,8,Uniform
 lidfa,30,70,Uniform
 lidfb,0,0,Constant
