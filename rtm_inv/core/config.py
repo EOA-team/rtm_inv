@@ -81,8 +81,8 @@ class LookupTableBasedInversion(RTMConfig):
         self.method = method
         self.lut_size = lut_size
 
-        # adopt number of solutions if given in relative numbers [0,1]
-        if 0 < n_solutions <= 1:
+        # adopt number of solutions if given in relative numbers [0,1[
+        if 0 < n_solutions < 1:
             self.n_solutions = int(np.round(n_solutions * lut_size, 0))
         elif n_solutions < 0:
             raise ValueError('The number of solutions must not be negative')
