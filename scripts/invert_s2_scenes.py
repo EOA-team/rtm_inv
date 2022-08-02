@@ -314,7 +314,7 @@ if __name__ == '__main__':
     
             # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
             output_dir_combination = output_dir.joinpath(
-                f'{cost_function}_{lut_size}_{n_solutions_str}'
+                f'{cost_function}_{lut_size}_{n_solutions_str}{percentage_str}'
             )
             output_dir_combination.mkdir(exist_ok=True)
 
@@ -345,5 +345,5 @@ if __name__ == '__main__':
             )
     
             logger.info(
-                f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {int(n_solution*100)}%'
+                f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {n_solutions_str}%'
             )
