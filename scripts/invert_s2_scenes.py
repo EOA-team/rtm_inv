@@ -345,5 +345,6 @@ if __name__ == '__main__':
             )
     
             logger.info(
-                f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; Number of solutions: {n_solutions_str}%'
+                f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; ' + \
+                f'Number of solutions: {n_solutions_str}{percentage_str}'
             )
