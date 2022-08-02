@@ -135,14 +135,14 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
 
 if __name__ == '__main__':
 
-    fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/timeseries_phenomEn_all_points_medians.gpkg')
+    fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/pl_pheno_median.gpkg')
     # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
     s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326')
     # s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
     s2_lai.drop(['index_right'], axis=1, inplace=True)
-    s2_lai.to_file('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/timeseries_phenomEn_all_points_medians_s2_lai.gpkg')
+    s2_lai.to_file('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/S2_pheno_median_lai_frs_50000_rmse.gpkg')
 
     # plot data
     out_dir = s2_lai_dir.joinpath('figures')

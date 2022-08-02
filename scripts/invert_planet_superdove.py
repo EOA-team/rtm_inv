@@ -116,13 +116,13 @@ if __name__ == '__main__':
 
     # GeoPackage with Planet pixels
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data')
-    ps_pixels = data_dir.joinpath('timeseries_phenomEn_all_points.gpkg')
+    ps_pixels = data_dir.joinpath('pl_pheno_cleaned.gpkg')
 
     # RTM configuration
     traits = ['lai']
-    n_solutions = 100
+    n_solutions = 0.1
     cost_function = 'rmse'
-    rtm_params = Path('../parameters/prosail_s2.csv')
+    rtm_params = Path('../parameters/prosail_frs.csv')
     lut_size = 50000
     rtm_config = LookupTableBasedInversion(
         traits=traits,
@@ -138,5 +138,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = data_dir.joinpath('timeseries_phenomEn_all_points_ps_lai.gpkg')
+    fname = data_dir.joinpath(f'pl_pheno_cleaned_lai_frs_{lut_size}_{cost_function}.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
