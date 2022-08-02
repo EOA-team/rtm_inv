@@ -242,7 +242,7 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['Strickhof', 'Witzwil', 'SwissFutureFarm']
+    farms = ['Strickhof'] # Witzwil
 
     # S2 configuration
     # maximum scene-cloud cover
@@ -261,9 +261,9 @@ if __name__ == '__main__':
     rtm_params = Path('../parameters/prosail_frs.csv')
     method = 'FRS'
     # RTM configurations to test
-    n_solutions = [0.05, 0.1, 0.2]
+    n_solutions = [1, 10, 100, 1000, 0.05, 0.1, 0.2]
     cost_functions = ['rmse', 'squared_sum_of_differences', 'contrast_function']
-    lut_sizes = [50000, 75000, 100000, 125000]
+    lut_sizes = [25000, 50000, 75000, 100000, 125000]
 
     # get all possible combinations
     combinations = list(itertools.product(*[n_solutions, cost_functions, lut_sizes]))
@@ -303,6 +303,10 @@ if __name__ == '__main__':
             # output directory naming convention: <cost_function>_<lut-size>_<number-of-solutions>
             output_dir_combination = output_dir.joinpath(f'{cost_function}_{lut_size}_{int(n_solution*100)}')
             output_dir_combination.mkdir(exist_ok=True)
+
+            # LUT directory for the given LUT size
+            lut_dir_farm_and_size = lut_dir_farm.joinpath(str(lut_size))
+            lut_dir_farm_and_size.mkdir(exist_ok=True)
     
             lut_config = LookupTableBasedInversion(
                 traits=traits,
@@ -323,7 +327,7 @@ if __name__ == '__main__':
                 resampling_method=resampling_method,
                 unique_feature_id='name',
                 output_dir=output_dir_combination,
-                lut_dir=lut_dir_farm
+                lut_dir=lut_dir_farm_and_size
             )
     
             logger.info(
