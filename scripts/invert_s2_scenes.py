@@ -306,8 +306,7 @@ if __name__ == '__main__':
             else:
                 n_solutions_str = str(int(n_solution))
                 percentage_str = ''
-                
-    
+
             logger.info(
                 f'Current Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; ' + \
                 f'Number of solutions: {n_solutions_str}{percentage_str}'
