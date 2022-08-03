@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Union
 from rtm_inv.core.config import RTMConfig, LookupTableBasedInversion
 from rtm_inv.core.inversion import inv_img, retrieve_traits
 from rtm_inv.core.lookup_table import generate_lut
+from eodal.utils.exceptions import InputError
 
 logger = get_settings().logger
 warnings.filterwarnings('ignore')
@@ -242,7 +243,7 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['Strickhof'] # Witzwil
+    farms = ['SwissFutureFarm'] # Witzwil
 
     # S2 configuration
     # maximum scene-cloud cover
@@ -250,7 +251,7 @@ if __name__ == '__main__':
 
     # define start and end of the time series
     date_start = date(2022,2,1)
-    date_end = date(2022,7,1)
+    date_end = date(2022,7,31)
 
     # spatial resolution of output product and spatial resampling method
     spatial_resolution = 10. # meters
@@ -258,7 +259,9 @@ if __name__ == '__main__':
 
     # set RTM parameters and traits to retrieve
     traits = ['lai', 'cab']
-    rtm_params = Path('../parameters/prosail_frs.csv')
+    rtm_params = Path('/home/graflu/git/rtm_inv/parameters/prosail_frs.csv')
+    if not rtm_params.exists():
+        raise InputError(f'Could not find {rtm_params}')
     method = 'FRS'
     # RTM configurations to test
     n_solutions = [1, 10, 100, 1000, 0.05, 0.1, 0.2]
