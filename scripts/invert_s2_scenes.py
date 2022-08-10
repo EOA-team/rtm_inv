@@ -259,10 +259,10 @@ if __name__ == '__main__':
 
     # set RTM parameters and traits to retrieve
     traits = ['lai', 'cab']
-    rtm_params = Path('/home/graflu/git/rtm_inv/parameters/prosail_frs.csv')
+    rtm_params = Path('/home/graflu/git/rtm_inv/parameters/prosail_lhs.csv')
     if not rtm_params.exists():
         raise InputError(f'Could not find {rtm_params}')
-    method = 'FRS'
+    method = 'LHS'
     # RTM configurations to test
     n_solutions = [1, 10, 100, 1000, 0.05, 0.1, 0.2]
     is_percentage = [False, False, False, False, True, True, True]
@@ -274,7 +274,7 @@ if __name__ == '__main__':
 
     # output directory for writing trait images
     output_dir = Path(
-        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/FRS'
+        '/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/LHS'
     )
     output_dir.mkdir(exist_ok=True)
 
