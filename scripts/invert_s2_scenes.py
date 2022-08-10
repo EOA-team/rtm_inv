@@ -243,7 +243,7 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['SwissFutureFarm'] # Witzwil
+    farms = ['Witzwil'] # Witzwil
 
     # S2 configuration
     # maximum scene-cloud cover
@@ -324,7 +324,13 @@ if __name__ == '__main__':
             # LUT directory for the given LUT size
             lut_dir_farm_and_size = lut_dir_farm.joinpath(str(lut_size))
             lut_dir_farm_and_size.mkdir(exist_ok=True)
-    
+
+            # check if the farm directory already exists and is not empty
+            # to allow for restarting the execution after program abortion
+            farm_traits = output_dir_combination.joinpath(farm_name)
+            if farm_traits.exists() and any(farm_traits.iterdir()):
+                continue
+
             lut_config = LookupTableBasedInversion(
                 traits=traits,
                 n_solutions=n_solution,
@@ -333,7 +339,7 @@ if __name__ == '__main__':
                 rtm_params=rtm_params,
                 method=method
             )
-        
+
             traits_from_s2(
                 date_start=date_start,
                 date_end=date_end,
@@ -346,7 +352,7 @@ if __name__ == '__main__':
                 output_dir=output_dir_combination,
                 lut_dir=lut_dir_farm_and_size
             )
-    
+
             logger.info(
                 f'Finished Setup: Cost Function = {cost_function}; LUT Size = {lut_size}; ' + \
                 f'Number of solutions: {n_solutions_str}{percentage_str}'

@@ -42,10 +42,11 @@ def extract_data(
 
         # search for corresponding NDVI file
         s2_ndvi_file = s2_lai_dir.joinpath(s2_lai_file.name.replace('traits.tiff', 'NDVI.tiff'))
-        s2_lai = RasterCollection.read_pixels(
-            fpath_raster=s2_ndvi_file,
-            vector_features=s2_lai
-        )
+        if s2_ndvi_file.exists():
+            s2_lai = RasterCollection.read_pixels(
+                fpath_raster=s2_ndvi_file,
+                vector_features=s2_lai
+            )
     
         # save the sensing data (from file name)
         s2_lai['acquired'] = datetime.datetime.strptime(
@@ -137,7 +138,7 @@ if __name__ == '__main__':
 
     fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/pl_pheno_median.gpkg')
     # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
-    s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/bounding_box_strickhof_4326')
+    s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/_old/LHS/rmse_50000_10/Strickhof')
     # s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
