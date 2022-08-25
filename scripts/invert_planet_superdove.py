@@ -114,9 +114,12 @@ def traits_from_ps_pixels(
 
 if __name__ == '__main__':
 
+    dataset = 'pl_BW_cleanedcd_v4'
+
     # GeoPackage with Planet pixels
-    data_dir = Path('/home/graflu/Documents/Planet')
-    ps_pixels = data_dir.joinpath('pl_pheno_cleaned_v3.gpkg')
+    data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/v4_planet_files')
+    ps_pixels = data_dir.joinpath(f'{dataset}.gpkg')
+    out_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/LAI_v4_processing')
 
     # RTM configuration
     traits = ['lai']
@@ -138,5 +141,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = data_dir.joinpath(f'pl_pheno_cleaned_v3_lai_frs_{lut_size}_{cost_function}.gpkg')
+    fname = out_dir.joinpath(f'{dataset}_lai_frs_{lut_size}_{cost_function}.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
