@@ -4,3 +4,4 @@ numpy
 lhsmdu
 # eodal
 pandas
+spart-python
