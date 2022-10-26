@@ -47,7 +47,14 @@ def extract_data(
                 fpath_raster=s2_ndvi_file,
                 vector_features=s2_lai
             )
-    
+        # and CI_GRENN
+        s2_ci_green_file = s2_lai_dir.joinpath(s2_lai_file.name.replace('traits.tiff', 'CI_GREEN.tiff'))
+        if s2_ci_green_file.exists():
+            s2_lai = RasterCollection.read_pixels(
+                fpath_raster=s2_ci_green_file,
+                vector_features=s2_lai
+            )
+
         # save the sensing data (from file name)
         s2_lai['acquired'] = datetime.datetime.strptime(
             s2_lai_file.name.split('_')[2], '%Y%m%dT%H%M%S'
@@ -136,14 +143,14 @@ def lai_s2_vs_ps(s2_lai: gpd.GeoDataFrame, ps_lai: gpd.GeoDataFrame, out_dir: Pa
 
 if __name__ == '__main__':
 
-    fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/pl_pheno_median.gpkg')
+    fpath_points = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/pl_BW_median.gpkg')
     # s2_lai_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/S2_LAI/')
     s2_lai_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns/Satellite_Data/_old/LHS/rmse_50000_10/Strickhof')
     # s2_lai_dir = Path('/mnt/ides/Lukas/04_Work/S2_LAI_ProSAIL')
     # extract LAI data from S2 LAI files
     s2_lai = extract_data(fpath_points, s2_lai_dir)
     s2_lai.drop(['index_right'], axis=1, inplace=True)
-    s2_lai.to_file('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/S2_pheno_median_lai_frs_50000_rmse.gpkg')
+    s2_lai.to_file('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/LAI_analysis_BW/data/S2_BW_median_lai_frs_50000_rmse.gpkg')
 
     # plot data
     out_dir = s2_lai_dir.joinpath('figures')

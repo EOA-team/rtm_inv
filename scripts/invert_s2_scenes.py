@@ -183,7 +183,7 @@ def traits_from_s2(
                 mask = mask.as_type('bool')
 
             logger.info(f'Feature {feature_id}: Starting inversion of {metadata.product_uri.iloc[0]}')
-            lut_idxs = inv_img(
+            lut_idxs, cost_function_values = inv_img(
                 lut=s2_lut_spectra,
                 img=s2_spectra,
                 mask=mask,
@@ -193,7 +193,9 @@ def traits_from_s2(
             trait_img = retrieve_traits(
                 lut=lut,
                 lut_idxs=lut_idxs,
-                traits=rtm_config.traits
+                traits=rtm_config.traits,
+                cost_function_values=cost_function_values,
+                measure='median'
             )
             
             # save traits to file
@@ -243,7 +245,7 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['Witzwil'] # Witzwil
+    farms = ['SwissFutureFarm'] # Witzwil
 
     # S2 configuration
     # maximum scene-cloud cover
@@ -264,10 +266,10 @@ if __name__ == '__main__':
         raise InputError(f'Could not find {rtm_params}')
     method = 'LHS'
     # RTM configurations to test
-    n_solutions = [1, 10, 100, 1000, 0.05, 0.1, 0.2]
-    is_percentage = [False, False, False, False, True, True, True]
+    n_solutions = [1, 10, 100, 1000, 0.01, 0.05, 0.1, 0.2]
+    is_percentage = [False, False, False, False, True, True, True, True]
     cost_functions = ['rmse', 'squared_sum_of_differences', 'contrast_function']
-    lut_sizes = [25000, 50000, 75000, 100000, 125000]
+    lut_sizes = [5000, 10000, 25000, 50000, 75000, 100000, 125000]
 
     # get all possible combinations
     combinations = list(itertools.product(*[n_solutions, cost_functions, lut_sizes]))
