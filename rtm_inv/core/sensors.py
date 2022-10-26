@@ -4,6 +4,7 @@ Sensors currently supported for RTM inversion
 
 import pandas as pd
 
+from copy import deepcopy
 from pathlib import Path
 
 class Sensors(object):
@@ -30,20 +31,24 @@ class Sensors(object):
             'SWIR-CIRRUS', 'SWIR1', 'SWIR2'
         ]
 
-    @staticmethod
-    def _read_srf_from_xls(fpath_srf_xls: Path, sheet_name: str) -> pd.DataFrame:
-        """
-        Reads spectral response function from XLS document
-
-        :param fpath_srf_xls:
-            file-path to the xlsx document from ESA containing the SRF values per
-            S2 band
-        :param sheet_name:
-            name of the sheet with the SRF values
-        :returns:
-            SRF values per wavelength [nm] and S2 band as DataFrame
-        """
-        return pd.read_excel(fpath_srf_xls, sheet_name=sheet_name) 
+        @classmethod
+        def _read_srf_from_xls(cls, fpath_srf_xls: Path, sheet_name: str) -> pd.DataFrame:
+            """
+            Reads spectral response function from XLS document
+    
+            :param fpath_srf_xls:
+                file-path to the xlsx document from ESA containing the SRF values per
+                S2 band
+            :param sheet_name:
+                name of the sheet with the SRF values
+            :returns:
+                SRF values per wavelength [nm] and S2 band as DataFrame
+            """
+            srf = pd.read_excel(fpath_srf_xls, sheet_name=sheet_name)
+            # rename columns to match the band names of S2
+            new_cols = ['wvl'] + deepcopy(cls.band_names)
+            srf.columns = new_cols
+            return srf
 
     class Sentinel2A(Sentinel2):
         """

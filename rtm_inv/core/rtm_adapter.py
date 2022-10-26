@@ -10,6 +10,7 @@ import pandas as pd
 import prosail
 import spart
 
+from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
@@ -146,18 +147,17 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
-    def _run_prosail(self, sensor: str, true_srf: Optional[pd.DataFrame] = None) -> None:
+    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None) -> None:
         """
         Runs the ProSAIL RTM
 
         :param sensor:
             name of the sensor for which to simulate the spectra
-        :param true_srf:
-            optional DataFrame with spectral response function of the spectral bands
-            of the target `sensor`. The dataframe must contain the wavelengths in nm
-            in the first column and the SRF of the single bands in the subsequent
-            columns. If not provided, the central wavelength and FWHM of the sensor
-            are used assuming a Gaussian SRF
+        :param fpath_srf:
+            optional path to file with spectral response function of the spectral bands
+            of the target `sensor`. The data must contain the wavelengths in nm
+            and the SRF of the single bands. If not provided, the central wavelength and
+            FWHM of the sensor are used assuming a Gaussian SRF.
         """
         # check if Prospect version
         if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
@@ -176,22 +176,27 @@ class RTM:
         # get band names
         sensor_bands = sensor.band_names
         self._lut.samples[sensor_bands] = np.nan
-        # get central wavelengths and band width per band
-        centers_sensor, fwhm_sensor = sensor.central_wvls, sensor.band_widths
-        # convert band withs to FWHM (full-width-half-maximum)
-        fwhm_sensor = [x*0.5 for x in fwhm_sensor]
-        # define centers and bandwidth of ProSAIL output
-        centers_prosail = np.arange(400,2501,1)
-        fwhm_prosail = np.ones(centers_prosail.size)
-        # initialize spectral sampler object to perform the spectral
-        # convolution from 1nm ProSAIL output to the sensor's spectral
-        # resolution using a Gaussian spectral response function
-        resampler = BandResampler(
-            centers1=centers_prosail,
-            centers2=centers_sensor,
-            fwhm1=fwhm_prosail,
-            fwhm2=fwhm_sensor
-        )
+
+        # no SRF available
+        if fpath_srf is None:
+            # get central wavelengths and band width per band
+            centers_sensor, fwhm_sensor = sensor.central_wvls, sensor.band_widths
+            # convert band withs to FWHM (full-width-half-maximum)
+            fwhm_sensor = [x*0.5 for x in fwhm_sensor]
+            # define centers and bandwidth of ProSAIL output
+            centers_prosail = np.arange(400,2501,1)
+            fwhm_prosail = np.ones(centers_prosail.size)
+            # initialize spectral sampler object to perform the spectral
+            # convolution from 1nm ProSAIL output to the sensor's spectral
+            # resolution using a Gaussian spectral response function
+            resampler = BandResampler(
+                centers1=centers_prosail,
+                centers2=centers_sensor,
+                fwhm1=fwhm_prosail,
+                fwhm2=fwhm_sensor
+            )
+        else:
+            srf_df = sensor.read_srf_from_xls(fpath_srf)
 
         # iterate through LUT and run ProSAIL
         spectrum = None
@@ -214,7 +219,11 @@ class RTM:
                 print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
 
             # resample to the spectral resolution of sensor
-            sensor_spectrum = resampler(spectrum)
+            if fpath_srf is None:
+                sensor_spectrum = resampler(spectrum)
+            else:
+                # TODO: add functionality to resample data based on true SRFs
+                pass
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:

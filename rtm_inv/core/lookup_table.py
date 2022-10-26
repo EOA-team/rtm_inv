@@ -219,6 +219,7 @@ def generate_lut(
         solar_azimuth_angle: Optional[float] = None,
         viewing_azimuth_angle: Optional[float] = None,
         relative_azimuth_angle: Optional[float] = None,
+        fpath_srf: Optional[Path] = None,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -254,6 +255,9 @@ def generate_lut(
         relative azimuth angle (if available, optional) in deg C. If provided, the relative
         azimuth angle is not calculated from solar and observer azimuth angle and also
         not checked against them!
+    :param fpath_srf:
+        if provided uses actual spectral response functions (SRF) for spectral resampling
+        of RTM outputs (usually in 1nm steps) into the spectral resolution of a given sensor 
     :param kwargs:
         optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
@@ -273,5 +277,5 @@ def generate_lut(
     # and run the RTM in forward mode in the second step
     # outputs get resampled to the spectral resolution of the sensor
     rtm = RTM(lut=lut, rtm=rtm_name)
-    lut_simulations = rtm.simulate_spectra(sensor=sensor)
+    lut_simulations = rtm.simulate_spectra(sensor=sensor, fpath_srf=fpath_srf)
     return lut_simulations
