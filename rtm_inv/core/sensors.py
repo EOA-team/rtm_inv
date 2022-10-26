@@ -2,6 +2,10 @@
 Sensors currently supported for RTM inversion
 '''
 
+import pandas as pd
+
+from pathlib import Path
+
 class Sensors(object):
     """
     Class of classes of sensors
@@ -26,6 +30,21 @@ class Sensors(object):
             'SWIR-CIRRUS', 'SWIR1', 'SWIR2'
         ]
 
+    @staticmethod
+    def _read_srf_from_xls(fpath_srf_xls: Path, sheet_name: str) -> pd.DataFrame:
+        """
+        Reads spectral response function from XLS document
+
+        :param fpath_srf_xls:
+            file-path to the xlsx document from ESA containing the SRF values per
+            S2 band
+        :param sheet_name:
+            name of the sheet with the SRF values
+        :returns:
+            SRF values per wavelength [nm] and S2 band as DataFrame
+        """
+        return pd.read_excel(fpath_srf_xls, sheet_name=sheet_name) 
+
     class Sentinel2A(Sentinel2):
         """
         defines Sentinel2A-MSI
@@ -36,6 +55,18 @@ class Sensors(object):
                 21, 66, 36, 31, 15, 15, 20, 106, 21, 20, 31, 91, 175
             ]
 
+        def read_srf_from_xls(self, fpath_srf_xls: Path):
+            """
+            Reads spectral response function from XLS document
+    
+            :param fpath_srf_xls:
+                file-path to the xlsx document from ESA containing the SRF values per
+                S2A band
+            :returns:
+                SRF values per wavelength [nm] and S2A band as DataFrame
+            """
+            return self._read_srf_from_xls(fpath_srf_xls=fpath_srf_xls, sheet_name='Spectral Responses (S2A)')
+
     class Sentinel2B(Sentinel2):
         """
         defines Sentinel2B-MSI
@@ -45,6 +76,18 @@ class Sensors(object):
             self.band_widths = [
                 21, 66, 36, 31, 16, 15, 20, 106, 22, 21, 30, 94, 185
             ]
+
+        def read_srf_from_xls(self, fpath_srf_xls: Path):
+            """
+            Reads spectral response function from XLS document
+    
+            :param fpath_srf_xls:
+                file-path to the xlsx document from ESA containing the SRF values per
+                S2A band
+            :returns:
+                SRF values per wavelength [nm] and S2A band as DataFrame
+            """
+            return self._read_srf_from_xls(fpath_srf_xls=fpath_srf_xls, sheet_name='Spectral Responses (S2B)')
 
     class Landsat8:
         """

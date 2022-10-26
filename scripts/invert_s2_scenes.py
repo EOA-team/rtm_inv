@@ -245,7 +245,7 @@ if __name__ == '__main__':
 
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/02_Field-Campaigns')
     year = 2022
-    farms = ['SwissFutureFarm'] # Witzwil
+    farms = ['Witzwil'] # Witzwil
 
     # S2 configuration
     # maximum scene-cloud cover

@@ -166,7 +166,8 @@ def _setup(
         solar_zenith_angle: Optional[float] = None,
         viewing_zenith_angle: Optional[float] = None,
         solar_azimuth_angle: Optional[float] = None,
-        viewing_azimuth_angle: Optional[float] = None
+        viewing_azimuth_angle: Optional[float] = None,
+        relative_azimuth_angle: Optional[float] = None
     ) -> pd.DataFrame:
     """
     Setup LUT for RTM (modification of angles and names if required)
@@ -192,6 +193,10 @@ def _setup(
         psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
         lut_params.loc[lut_params['Parameter'] == rel_angle, 'Min'] = psi
         lut_params.loc[lut_params['Parameter'] == rel_angle, 'Max'] = psi
+    if relative_azimuth_angle is not None:
+        psi = relative_azimuth_angle
+        lut_params.loc[lut_params['Parameter'] == rel_angle, 'Min'] = psi
+        lut_params.loc[lut_params['Parameter'] == rel_angle, 'Max'] = psi
 
     # 'mode' and 'std' are optional columns
     further_columns = ['Mode', 'Std']
@@ -213,6 +218,7 @@ def generate_lut(
         viewing_zenith_angle: Optional[float] = None,
         solar_azimuth_angle: Optional[float] = None,
         viewing_azimuth_angle: Optional[float] = None,
+        relative_azimuth_angle: Optional[float] = None,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -244,6 +250,10 @@ def generate_lut(
         solar azimuth angle as fixed scene-wide value (optional) in deg C.
     :param viewing_azimuth_angle:
         viewing (observer) azimuth angle as fixed scene-wide value (optional) in deg C.
+    :param relative_azimuth_angle:
+        relative azimuth angle (if available, optional) in deg C. If provided, the relative
+        azimuth angle is not calculated from solar and observer azimuth angle and also
+        not checked against them!
     :param kwargs:
         optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
@@ -255,7 +265,7 @@ def generate_lut(
 
     # prepare LUTs for RTMs
     lut_params = _setup(lut_params, rtm_name, solar_zenith_angle, viewing_zenith_angle,
-                        solar_azimuth_angle, viewing_azimuth_angle)
+                        solar_azimuth_angle, viewing_azimuth_angle, relative_azimuth_angle)
     # get input parameter samples first
     lut = LookupTable(params=lut_params)
     lut.generate_samples(num_samples=lut_size, method=sampling_method, **kwargs)

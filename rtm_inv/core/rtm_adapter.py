@@ -146,12 +146,18 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
-    def _run_prosail(self, sensor: str) -> None:
+    def _run_prosail(self, sensor: str, true_srf: Optional[pd.DataFrame] = None) -> None:
         """
         Runs the ProSAIL RTM
 
         :param sensor:
             name of the sensor for which to simulate the spectra
+        :param true_srf:
+            optional DataFrame with spectral response function of the spectral bands
+            of the target `sensor`. The dataframe must contain the wavelengths in nm
+            in the first column and the SRF of the single bands in the subsequent
+            columns. If not provided, the central wavelength and FWHM of the sensor
+            are used assuming a Gaussian SRF
         """
         # check if Prospect version
         if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):

@@ -110,7 +110,7 @@ def _retrieve_traits(
         3-d image with trait values with shape (n_traits, nrows, ncols)
     """
     n_traits = trait_values.shape[1]
-    _, rows, cols = lut_idxs.shape
+    n_solutions, rows, cols = lut_idxs.shape
     # allocate array for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
     trait_img = np.zeros(trait_img_shape, dtype='float64')
@@ -129,7 +129,7 @@ def _retrieve_traits(
             elif measure == 'weighted_mean':
                 denominator = np.sum(0.1 * cost_function_values[:,row,col])
                 vest_sum = 0.
-                for solution in range(lut_idxs.shape[0]):
+                for solution in range(n_solutions):
                     weight = 0.1 * cost_function_values[solution,row,col] / denominator
                     vest_sum = vest_sum + weight * trait_vals_n_solutions[solution]
                 trait_img[:,row,col] = vest_sum[0]
