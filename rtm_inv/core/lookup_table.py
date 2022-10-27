@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 
 from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
-from numba.core.types import none
+from rtm_inv.core.utils import chlorophyll_carotiniod_constraint
 
 sampling_methods: List[str] = ['LHS']
 
@@ -157,6 +157,12 @@ class LookupTable(object):
             # (actually min and max should be set to the same value)
             sample_traits[constant_trait] = constant_traits[constant_trait]['Min']
 
+        # implement constraints to make the LUT physiologically more plausible, i.e.,
+        # increase the correlation between plant biochemical and biophysical parameters
+        # which is observed in plants but not reflected by a random sampling scheme
+        sample_traits = chlorophyll_carotiniod_constraint(lut_df=sample_traits)
+        # more constraints ...
+
         # set samples to instance variable
         self.samples = sample_traits
 
@@ -220,6 +226,7 @@ def generate_lut(
         viewing_azimuth_angle: Optional[float] = None,
         relative_azimuth_angle: Optional[float] = None,
         fpath_srf: Optional[Path] = None,
+        remove_invalid_green_peaks: Optional[bool] = False,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -257,7 +264,12 @@ def generate_lut(
         not checked against them!
     :param fpath_srf:
         if provided uses actual spectral response functions (SRF) for spectral resampling
-        of RTM outputs (usually in 1nm steps) into the spectral resolution of a given sensor 
+        of RTM outputs (usually in 1nm steps) into the spectral resolution of a given sensor
+    :param remove_invalid_green_peaks:
+        remove simulated spectra with unrealistic green peaks (occuring at wavelengths > 547nm)
+        as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
+        NOTE: When this option is used, spectra not fulfilling the green peak criterion 
+        are set to NaN.
     :param kwargs:
         optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
@@ -277,5 +289,9 @@ def generate_lut(
     # and run the RTM in forward mode in the second step
     # outputs get resampled to the spectral resolution of the sensor
     rtm = RTM(lut=lut, rtm=rtm_name)
-    lut_simulations = rtm.simulate_spectra(sensor=sensor, fpath_srf=fpath_srf)
+    lut_simulations = rtm.simulate_spectra(
+        sensor=sensor,
+        fpath_srf=fpath_srf,
+        remove_invalid_green_peaks=remove_invalid_green_peaks
+    )
     return lut_simulations

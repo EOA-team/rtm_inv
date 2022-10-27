@@ -14,8 +14,8 @@ from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
-from rtm_inv.core.utils import resample_spectra
 from rtm_inv.core.sensors import Sensors
+from rtm_inv.core.utils import green_is_valid, resample_spectra
 
 class RTMRunTimeError(Exception):
     pass
@@ -148,7 +148,8 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
-    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None) -> None:
+    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None,
+                     remove_invalid_green_peaks: Optional[bool] = False) -> None:
         """
         Runs the ProSAIL RTM
 
@@ -159,6 +160,9 @@ class RTM:
             of the target `sensor`. The data must contain the wavelengths in nm
             and the SRF of the single bands. If not provided, the central wavelength and
             FWHM of the sensor are used assuming a Gaussian SRF.
+        :param remove_invalid_green_peaks:
+            remove simulated spectra with unrealistic green peaks (occuring at wavelengths > 547nm)
+            as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
         """
         # check if Prospect version
         if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
@@ -219,6 +223,15 @@ class RTM:
                 raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
             if (idx+1)%self._nstep == 0:
                 print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
+
+            # check if the spectrum has an invalid green peak (optionally, following
+            # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
+            if remove_invalid_green_peaks:
+                valid = green_is_valid(wvls=centers_prosail, spectrum=spectrum)
+                # set invalid spectra to NaN (so they can be filtered out) and continue
+                if not valid:
+                    self._lut.samples.at[idx,sensor_bands] = np.nan
+                    continue
 
             # resample to the spectral resolution of sensor
             if fpath_srf is None:

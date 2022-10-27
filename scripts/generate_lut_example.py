@@ -36,8 +36,10 @@ if __name__ == '__main__':
         viewing_azimuth_angle=viewing_azimuth_angle,
         lut_size=lut_size,
         sampling_method=sampling_method,
-        fpath_srf=fpath_srf
+        fpath_srf=fpath_srf,
+        remove_invalid_green_peaks=True
     )
+    lut_srf.dropna(inplace=True)
 
     # lut_no_srf = generate_lut(
     #     sensor=platform,
