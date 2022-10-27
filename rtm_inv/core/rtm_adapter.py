@@ -14,6 +14,7 @@ from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
+from rtm_inv.core.utils import resample_spectra
 from rtm_inv.core.sensors import Sensors
 
 class RTMRunTimeError(Exception):
@@ -222,8 +223,9 @@ class RTM:
             if fpath_srf is None:
                 sensor_spectrum = resampler(spectrum)
             else:
-                # TODO: add functionality to resample data based on true SRFs
-                pass
+                # resample RTM output based on true SRFs
+                print('hallo')
+                
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:
