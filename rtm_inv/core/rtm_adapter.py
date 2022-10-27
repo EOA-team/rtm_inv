@@ -178,15 +178,16 @@ class RTM:
         sensor_bands = sensor.band_names
         self._lut.samples[sensor_bands] = np.nan
 
+        # define centers and bandwidth of ProSAIL output
+        centers_prosail = np.arange(400,2501,1)
+        fwhm_prosail = np.ones(centers_prosail.size)
+
         # no SRF available
         if fpath_srf is None:
             # get central wavelengths and band width per band
             centers_sensor, fwhm_sensor = sensor.central_wvls, sensor.band_widths
             # convert band withs to FWHM (full-width-half-maximum)
             fwhm_sensor = [x*0.5 for x in fwhm_sensor]
-            # define centers and bandwidth of ProSAIL output
-            centers_prosail = np.arange(400,2501,1)
-            fwhm_prosail = np.ones(centers_prosail.size)
             # initialize spectral sampler object to perform the spectral
             # convolution from 1nm ProSAIL output to the sensor's spectral
             # resolution using a Gaussian spectral response function
@@ -224,8 +225,14 @@ class RTM:
                 sensor_spectrum = resampler(spectrum)
             else:
                 # resample RTM output based on true SRFs
-                print('hallo')
-                
+                prosail_df = pd.DataFrame(
+                    {'wvl': centers_prosail, 'prosail': spectrum}
+                )
+                sensor_spectrum = resample_spectra(
+                    spectral_df=prosail_df, sat_srf=srf_df, wl_column='wvl'
+                )
+                sensor_spectrum = sensor_spectrum[0].values
+
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:
