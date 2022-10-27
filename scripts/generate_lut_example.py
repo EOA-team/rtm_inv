@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     # generate the lookup-table - depending on the size of it this might take a while
     # the result is a pandas DataFrame with leaf and canopy parameters + ProSAIL spectra
-    lut = generate_lut(
+    lut_srf = generate_lut(
         sensor=platform,
         lut_params=rtm_params,
         solar_zenith_angle=solar_zenith_angle,
@@ -39,5 +39,28 @@ if __name__ == '__main__':
         fpath_srf=fpath_srf
     )
 
-    lut.info()
-    
+    # lut_no_srf = generate_lut(
+    #     sensor=platform,
+    #     lut_params=rtm_params,
+    #     solar_zenith_angle=solar_zenith_angle,
+    #     viewing_zenith_angle=viewing_zenith_angle,
+    #     solar_azimuth_angle=solar_azimuth_angle,
+    #     viewing_azimuth_angle=viewing_azimuth_angle,
+    #     lut_size=lut_size,
+    #     sampling_method=sampling_method,
+    #     fpath_srf=None
+    # )
+    #
+    # import seaborn as sns
+    # import matplotlib.pyplot as plt
+    # plt.style.use('ggplot')
+    #
+    # cols_bands = ['B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12']
+    # f, ax = plt.subplots(nrows=2, ncols=5, figsize=(30,10))
+    # ax = ax.flatten()
+    # for idx, col_band in enumerate(cols_bands): 
+    #     sns.kdeplot(x=lut_srf[col_band], y=lut_no_srf[col_band], ax=ax[idx], fill=True)
+    #     ax[idx].set_xlabel('Reflectance with S2A SRF')
+    #     ax[idx].set_ylabel('Reflectance with Gaussian SRF')
+    #     ax[idx].set_title(col_band)
+    # f.savefig(fpath_srf.parent.joinpath('effects_of_srf.png'), bbox_inches='tight')
