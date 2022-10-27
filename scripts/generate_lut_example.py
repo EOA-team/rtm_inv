@@ -24,7 +24,6 @@ if __name__ == '__main__':
 
     # path to spectral response function of Sentinel-2
     fpath_srf = Path('/home/graflu/public/Evaluation/Satellite_data/Sentinel-2/Documentation/S2_Specsheets/S2-SRF_COPE-GSEG-EOPG-TN-15-0007_3.1.xlsx')
-    fpath_srf = None
 
     # generate the lookup-table - depending on the size of it this might take a while
     # the result is a pandas DataFrame with leaf and canopy parameters + ProSAIL spectra
