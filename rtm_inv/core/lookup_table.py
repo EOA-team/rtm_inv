@@ -13,7 +13,7 @@ from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
 from rtm_inv.core.utils import chlorophyll_carotiniod_constraint, transform_lai
 
-sampling_methods: List[str] = ['LHS']
+sampling_methods: List[str] = ['LHS', 'FRS']
 
 class LookupTable(object):
     """
