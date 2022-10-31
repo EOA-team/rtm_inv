@@ -37,7 +37,8 @@ if __name__ == '__main__':
         lut_size=lut_size,
         sampling_method=sampling_method,
         fpath_srf=fpath_srf,
-        remove_invalid_green_peaks=True
+        remove_invalid_green_peaks=True,
+        linearize_lai=True
     )
     lut_srf.dropna(inplace=True)
 

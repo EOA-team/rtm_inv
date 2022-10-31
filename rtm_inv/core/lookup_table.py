@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 
 from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
-from rtm_inv.core.utils import chlorophyll_carotiniod_constraint
+from rtm_inv.core.utils import chlorophyll_carotiniod_constraint, transform_lai
 
 sampling_methods: List[str] = ['LHS']
 
@@ -43,6 +43,7 @@ class LookupTable(object):
         else:
             raise TypeError('Expected Path-object or DataFrame')
         self.samples = None
+        self.lai_transformed = False
 
     @property
     def samples(self) -> Union[pd.DataFrame, None]:
@@ -67,6 +68,7 @@ class LookupTable(object):
             self,
             num_samples: int,
             method: str,
+            linearize_lai: Optional[bool] = False,
             seed_value: Optional[int] = 0
         ):
         """
@@ -86,6 +88,9 @@ class LookupTable(object):
             lookup-table)
         :param method:
             sampling method to apply
+        :param linearize_lai:
+            if True, transforms LAI values to a more linearized representation
+            as suggested by Verhoef et al. (2018, https://doi.org/10.1016/j.rse.2017.08.006)
         :param seed_value:
             seed value to set to the pseudo-random-number generator. Default
             is zero.
@@ -161,8 +166,10 @@ class LookupTable(object):
         # increase the correlation between plant biochemical and biophysical parameters
         # which is observed in plants but not reflected by a random sampling scheme
         sample_traits = chlorophyll_carotiniod_constraint(lut_df=sample_traits)
-        # more constraints ...
-
+        # linearize LAI as proposed by Verhoef et al. (2018,
+        # https://doi.org/10.1016/j.rse.2017.08.006)
+        if linearize_lai:
+            sample_traits['lai'] = transform_lai(sample_traits['lai'], inverse=False)
         # set samples to instance variable
         self.samples = sample_traits
 

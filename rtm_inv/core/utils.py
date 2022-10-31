@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 from scipy.stats import poisson
+from typing import Optional
 
 green_peak_threshold = 547 # nm
 green_region = (500, 600) # nm
@@ -194,6 +195,25 @@ def green_is_valid(wvls: np.ndarray, spectrum: np.ndarray) -> bool:
     # plt.legend()
     # plt.ylim(0,0.07)
     # plt.show()
-    
-    
+
+def transform_lai(lai: pd.Series | np.ndarray | float, inverse: Optional[bool] = False
+                  ) -> pd.Series | np.ndarray | float:
+    """
+    Apply a transformation of LAI values to linearize the model behavior to increase
+    the SWIR band sensitivity towards high high values as suggested by Verhoef et al. (2018,
+    https://doi.org/10.1016/j.rse.2017.08.006). The function works forwards and inverse.
+
+    :param lai:
+        leaf area index values to transform or transform back
+    :param inverse:
+        if True transformes transformed values back into LAI values
+    :returns:
+        transformed LAI values
+    """
+    # transformed LAI back to actual LAI
+    if inverse:
+        return -5 * np.log(-lai + 1)
+    # LAI to transformed values
+    else:
+        return 1 - np.exp(-0.2 * lai)
     
