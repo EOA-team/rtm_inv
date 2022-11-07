@@ -84,7 +84,7 @@ def chlorophyll_carotiniod_constraint(lut_df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with (uncorrelated) leaf chlorophyll a+b (cab)
         and leaf carotenoid (car) samples for running PROSAIL
     :returns:
-        LUT with car values sampled based on car
+        LUT with car values sampled based on cab
     """
     def lower_boundary(cab: float | np.ndarray) -> float | np.ndarray:
         """
@@ -132,8 +132,7 @@ def chlorophyll_carotiniod_constraint(lut_df: pd.DataFrame) -> pd.DataFrame:
     # update the car column in the LUT
     out_df = lut_df.copy()
     out_df['car'] = car_samples
-    return out_df
-            
+
     # import matplotlib.pyplot as plt
     # import seaborn as sns
     # plt.style.use('seaborn-darkgrid')
@@ -142,21 +141,157 @@ def chlorophyll_carotiniod_constraint(lut_df: pd.DataFrame) -> pd.DataFrame:
     # lower_constraint = lower_boundary(cab_linspace)
     # upper_constraint = upper_boundary(cab_linspace)
     # regression_line = cab_car_regression(cab_linspace)
-    # f, ax = plt.subplots(ncols=2, sharex=True, sharey=True)
-    # sns.kdeplot(x='cab', y='car', data=lut_df, fill=True, ax=ax[0])
-    # sns.kdeplot(x=cab, y=car_samples, fill=True, ax=ax[1])
-    # ax[0].set_title(f'Original PROSAIL LUT (N={cab.shape[0]})')
-    # ax[1].set_title(f'Redistributed PROSAIL LUT (N={cab.shape[0]})')
+    # f, ax = plt.subplots(ncols=2, sharex=True, sharey=False, figsize=(20,10))
+    # sns.kdeplot(x='cab', y='car', data=lut_df, fill=True, ax=ax[0], cmap='viridis')
+    # sns.kdeplot(x=cab, y=car_samples, fill=True, ax=ax[1], cmap='viridis')
+    # ax[0].set_title(f'PROSPECT LUT; N={cab.shape[0]}', size=16)
+    # ax[1].set_title(f'Redistributed PROSPECT LUT; N={cab.shape[0]}', size=16)
     # for idx in range(2):
-    #     ax[idx].set_xlabel(r'Cab (PROSAIL) [$\mu g$ $cm^{-2}$]')
-    #     ax[idx].set_ylabel(r'Car (PROSAIL) [$\mu g$ $cm^{-2}$]')
-    #     ax[idx].plot(cab_linspace, lower_constraint, label='lower constraint')
-    #     ax[idx].plot(cab_linspace, upper_constraint, label='upper constraint')
-    #     ax[idx].plot(cab_linspace, regression_line, linestyle='dashed', label='Cab-Car Regression')
-    # ax[1].legend()
+    #     ax[idx].set_xlabel(r'Leaf Chlorophyll a+b Content (PROSPECT) [$\mu g$ $cm^{-2}$]', fontsize=16)
+    #     ax[idx].set_ylabel(r'Leaf Carotenoid Content (PROSPECT) [$\mu g$ $cm^{-2}$]', fontsize=16)
+    #     ax[idx].plot(cab_linspace, upper_constraint, label='Upper Constraint',
+    #                  linestyle='dotted', color='grey', linewidth=2)
+    #     ax[idx].plot(cab_linspace, lower_constraint, label='Lower Constraint',
+    #                  linestyle='dashdot', color='grey', linewidth=2)
+    #     ax[idx].plot(cab_linspace, regression_line, linestyle='dashed', label='Cab-Car Regression',
+    #                  color='grey', linewidth=2)
+    # ax[1].legend(fontsize=14)
     # ax[1].set_xlim(0,80)
     # ax[1].set_ylim(0,30)
-    # plt.show()
+    # ax[1].set_ylim(0,30)
+    # ax[1].tick_params(axis='both', labelsize=14)
+    # ax[0].tick_params(axis='both', labelsize=14)
+    # f.savefig('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/03_WW_Traits/ccc_glai_relationship/regression/prosail_lut-example_cab-car.png',
+    #           bbox_inches='tight')
+
+    return out_df
+
+def calc_ccc(glai: float | np.ndarray, cab: float | np.ndarray) -> float | np.ndarray:
+    """
+    Calculate the Canopy Chlorophyll Content (CCC) in g/m2 from Green LAI and
+    leaf chlorophyll a+b content (in ug/cm2).
+
+    CCC = LAI * Cab * 0.01 (0.01 is used to convert ug/m2 into SI units, i.e., g/m2)
+
+    :param glai:
+        green leaf area index [m2 m-2]
+    :param cab:
+        leaf chlorophyll a+b content [ug cm-2]
+    :returns:
+        canopy chlorophyll content [g m-2]
+    """
+    return glai * cab * 0.01
+
+def glai_ccc_constraint(lut_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Redistribute leaf chlorophyll values based on an empirical relationship between
+    canopy chlorophyll content (CCC) and green leaf area index (GLAI) established
+    using data from summer and winter wheat and barley and corn from multiple
+    years from sites in Germany and Switzerland.
+
+    :param lut_df:
+        DataFrame with (uncorrelated) leaf chlorophyll a+b (cab)
+        and leaf area index (lai) samples for running PROSAIL
+    :returns:
+        LUT with leaf and canopy chlorophyll values sampled based on lai
+    """
+    def lower_boundary(glai: float | np.ndarray) -> float | np.ndarray:
+        """
+        lower boundary of the empirical GLAI-CCC relationship
+        """
+        return 2*0.038146440139412485 * (glai / 1.681904541682302)**2 + 0.3336636117799512 * \
+            glai / 1.681904541682302 - 0.055147504680912895
+
+    def upper_boundary(glai: float | np.ndarray) -> float | np.ndarray:
+        """
+        upper boundary of the empirical GLAI-CCC relationship
+        """
+        return 0.5827304274822582 * 1.4663274265907047 * glai + 2*1.7426271784579451e-16
+
+    def glai_ccc_regression(glai: float | np.ndarray) -> float | np.ndarray:
+        """
+        empirical linear regression between GLAI and CCC
+        """
+        return 3.6287601640166543e-29 + 0.5754806937355119 * glai
+
+    def sample_gamma(glai: float | np.ndarray) -> np.ndarray:
+        """
+        Sample CCC values based on GLAI values using a truncated
+        Gamma distribution between lower and upper bounds
+        """
+        if isinstance(glai, float):
+            glai = [glai]
+        ccc_samples = []
+        for glai_val in glai:
+            lower = lower_boundary(glai_val)
+            upper = upper_boundary(glai_val)
+            regression_val = glai_ccc_regression(glai_val)
+            while True:
+                ccc_sample = np.random.gamma(regression_val)
+                if lower < ccc_sample < upper:
+                    ccc_samples.append(ccc_sample)
+                    break
+        return np.array(ccc_samples)
+
+    # redistribute CCC based on glai-ccc relationship
+    glai = lut_df['lai']
+    ccc_samples = sample_gamma(glai)
+    # update the cab column in the LUT using CCC and LAI
+    out_df = lut_df.copy()
+    # cab = ccc / glai * 100
+    cab_samples = ccc_samples / glai * 100
+    out_df['cab'] = cab_samples
+
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # plt.style.use('seaborn-darkgrid')
+    # glai_linspace = np.linspace(glai.min(), glai.max(), glai.shape[0])
+    # f, ax = plt.subplots(ncols=2, sharex=True, sharey=False, figsize=(20,10))
+    # sns.kdeplot(x='lai', y='cab', data=lut_df, ax=ax[0], cmap='viridis', fill=True)
+    # sns.kdeplot(x=glai, y=cab_samples, ax=ax[1], cmap='viridis', fill=True)
+    # ax[0].set_title(f'PROSAIL LUT; N={glai.shape[0]}', size=16)
+    # ax[1].set_title(f'Redistributed PROSAIL LUT; N={glai.shape[0]}', size=16)
+    # for idx in range(2):
+    #     ax[idx].set_xlabel(r'Green Leaf Area Index (PROSAIL) [$m^2$ $m^{-2}$]', fontsize=16)
+    #     ax[idx].set_ylabel(r'Leaf Chlorophyll a+b Content (PROSPECT) [$\mu g$ $m^{-2}$]', fontsize=16)
+    # ax[1].set_xlim(0,8)
+    # ax[0].set_ylim(0,80)
+    # ax[1].set_ylim(0,80)
+    # ax[1].tick_params(axis='both', labelsize=14)
+    # ax[0].tick_params(axis='both', labelsize=14)
+    # f.savefig('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/03_WW_Traits/ccc_glai_relationship/regression/prosail_lut-example-glai-cab.png',
+    #           bbox_inches='tight')
+    
+    # lut_df['ccc'] = calc_ccc(lut_df['lai'], lut_df['cab'])
+    # glai_linspace = np.linspace(glai.min(), glai.max(), glai.shape[0])
+    # lower_constraint = lower_boundary(glai_linspace)
+    # upper_constraint = upper_boundary(glai_linspace)
+    # regression_line = glai_ccc_regression(glai_linspace)
+    # f, ax = plt.subplots(ncols=2, sharex=True, sharey=False, figsize=(20,10))
+    # sns.kdeplot(x='lai', y='ccc', data=lut_df, ax=ax[0], cmap='viridis', fill=True)
+    # sns.kdeplot(x=glai, y=ccc_samples, ax=ax[1], cmap='viridis', fill=True)
+    # ax[0].set_title(f'PROSAIL LUT; N={glai.shape[0]}', size=16)
+    # ax[1].set_title(f'Redistributed PROSAIL LUT; N={glai.shape[0]}', size=16)
+    # for idx in range(2):
+    #     ax[idx].set_xlabel(r'Green Leaf Area Index (PROSAIL) [$m^2$ $m^{-2}$]', fontsize=16)
+    #     ax[idx].set_ylabel(r'Canopy Chlorophyll Content (PROSAIL) [$g$ $m^{-2}$]', fontsize=16)
+    #     ax[idx].plot(glai_linspace, upper_constraint, label='Upper Constraint',
+    #                  linestyle='dotted', color='grey', linewidth=2
+    #     )
+    #     ax[idx].plot(glai_linspace, lower_constraint, label='Lower Constraint',
+    #                  linestyle='dashdot', color='grey', linewidth=2
+    #     )
+    #     ax[idx].plot(glai_linspace, regression_line, linestyle='dashed', label='GLAI-CCC Regression',
+    #                  color='grey', linewidth=2)
+    # ax[1].legend(fontsize=14)
+    # ax[1].set_xlim(0,8)
+    # ax[0].set_ylim(0,6)
+    # ax[1].set_ylim(0,6)
+    # ax[1].tick_params(axis='both', labelsize=14)
+    # ax[0].tick_params(axis='both', labelsize=14)
+    # f.savefig('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/03_WW_Traits/ccc_glai_relationship/regression/prosail_lut-example-glai-gcc.png',
+    #           bbox_inches='tight')
+    return out_df
 
 def green_is_valid(wvls: np.ndarray, spectrum: np.ndarray) -> bool:
     """
