@@ -123,16 +123,17 @@ def _retrieve_traits(
                 trait_img[:,row,col] = np.nan
                 continue
             trait_vals_n_solutions = trait_values[lut_idxs[:,row,col],:]
-            if measure == 'Median':
-                trait_img[:,row,col] = \
-                    np.median(trait_vals_n_solutions)
-            elif measure == 'weighted_mean':
-                denominator = np.sum(0.1 * cost_function_values[:,row,col])
-                vest_sum = 0.
-                for solution in range(n_solutions):
-                    weight = 0.1 * cost_function_values[solution,row,col] / denominator
-                    vest_sum = vest_sum + weight * trait_vals_n_solutions[solution]
-                trait_img[:,row,col] = vest_sum[0]
+            for trait_idx in range(trait_values.shape[1]):
+                if measure == 'Median':
+                    trait_img[trait_idx,row,col] = \
+                        np.median(trait_vals_n_solutions[:,trait_idx])
+                elif measure == 'weighted_mean':
+                    denominator = np.sum(0.1 * cost_function_values[:,row,col])
+                    vest_sum = 0.
+                    for solution in range(n_solutions):
+                        weight = 0.1 * cost_function_values[solution,row,col] / denominator
+                        vest_sum += weight * trait_vals_n_solutions[solution,trait_idx]
+                    trait_img[trait_idx,row,col] = vest_sum
 
     return trait_img
 
