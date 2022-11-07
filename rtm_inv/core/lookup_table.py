@@ -11,7 +11,8 @@ from typing import List, Optional, Union
 
 from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
-from rtm_inv.core.utils import chlorophyll_carotiniod_constraint, transform_lai
+from rtm_inv.core.utils import chlorophyll_carotiniod_constraint, glai_ccc_constraint, \
+    transform_lai
 
 sampling_methods: List[str] = ['LHS', 'FRS']
 
@@ -68,7 +69,6 @@ class LookupTable(object):
             self,
             num_samples: int,
             method: str,
-            linearize_lai: Optional[bool] = False,
             seed_value: Optional[int] = 0
         ):
         """
@@ -88,9 +88,6 @@ class LookupTable(object):
             lookup-table)
         :param method:
             sampling method to apply
-        :param linearize_lai:
-            if True, transforms LAI values to a more linearized representation
-            as suggested by Verhoef et al. (2018, https://doi.org/10.1016/j.rse.2017.08.006)
         :param seed_value:
             seed value to set to the pseudo-random-number generator. Default
             is zero.
@@ -165,11 +162,8 @@ class LookupTable(object):
         # implement constraints to make the LUT physiologically more plausible, i.e.,
         # increase the correlation between plant biochemical and biophysical parameters
         # which is observed in plants but not reflected by a random sampling scheme
+        sample_traits = glai_ccc_constraint(lut_df=sample_traits)
         sample_traits = chlorophyll_carotiniod_constraint(lut_df=sample_traits)
-        # linearize LAI as proposed by Verhoef et al. (2018,
-        # https://doi.org/10.1016/j.rse.2017.08.006)
-        if linearize_lai:
-            sample_traits['lai'] = transform_lai(sample_traits['lai'], inverse=False)
         # set samples to instance variable
         self.samples = sample_traits
 
@@ -234,6 +228,7 @@ def generate_lut(
         relative_azimuth_angle: Optional[float] = None,
         fpath_srf: Optional[Path] = None,
         remove_invalid_green_peaks: Optional[bool] = False,
+        linearize_lai: Optional[bool] = False,
         **kwargs
     ) -> pd.DataFrame:
     """
@@ -277,6 +272,9 @@ def generate_lut(
         as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
         NOTE: When this option is used, spectra not fulfilling the green peak criterion 
         are set to NaN.
+    :param linearize_lai:
+        if True, transforms LAI values to a more linearized representation
+        as suggested by Verhoef et al. (2018, https://doi.org/10.1016/j.rse.2017.08.006)
     :param kwargs:
         optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
@@ -301,4 +299,8 @@ def generate_lut(
         fpath_srf=fpath_srf,
         remove_invalid_green_peaks=remove_invalid_green_peaks
     )
+    # linearize LAI as proposed by Verhoef et al. (2018,
+    # https://doi.org/10.1016/j.rse.2017.08.006)
+    if linearize_lai:
+        lut_simulations['lai'] = transform_lai(lut_simulations['lai'], inverse=False)
     return lut_simulations
