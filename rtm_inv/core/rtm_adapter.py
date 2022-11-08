@@ -25,7 +25,7 @@ class SPARTParameters:
     class defining which leaf, canopy, soil and atmosphere parameters
     are required to run SPART simulations.
 
-    This class helps mapping the entries of the CSV with the SPART model
+    This class helps mapper the entries of the CSV with the SPART model
     parameterization to the actual SPART function call so that user do not
     have to take care about the order of parameters.
     """
