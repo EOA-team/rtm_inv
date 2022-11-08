@@ -14,8 +14,8 @@ from pathlib import Path
 from spectral import BandResampler
 from typing import Optional
 
-from rtm_inv.core.utils import resample_spectra
 from rtm_inv.core.sensors import Sensors
+from rtm_inv.core.utils import green_is_valid, resample_spectra
 
 class RTMRunTimeError(Exception):
     pass
@@ -148,7 +148,8 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
-    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None) -> None:
+    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None,
+                     remove_invalid_green_peaks: Optional[bool] = False) -> None:
         """
         Runs the ProSAIL RTM
 
@@ -159,6 +160,9 @@ class RTM:
             of the target `sensor`. The data must contain the wavelengths in nm
             and the SRF of the single bands. If not provided, the central wavelength and
             FWHM of the sensor are used assuming a Gaussian SRF.
+        :param remove_invalid_green_peaks:
+            remove simulated spectra with unrealistic green peaks (occuring at wavelengths > 547nm)
+            as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
         """
         # check if Prospect version
         if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
@@ -178,15 +182,16 @@ class RTM:
         sensor_bands = sensor.band_names
         self._lut.samples[sensor_bands] = np.nan
 
+        # define centers and bandwidth of ProSAIL output
+        centers_prosail = np.arange(400,2501,1)
+        fwhm_prosail = np.ones(centers_prosail.size)
+
         # no SRF available
         if fpath_srf is None:
             # get central wavelengths and band width per band
             centers_sensor, fwhm_sensor = sensor.central_wvls, sensor.band_widths
             # convert band withs to FWHM (full-width-half-maximum)
             fwhm_sensor = [x*0.5 for x in fwhm_sensor]
-            # define centers and bandwidth of ProSAIL output
-            centers_prosail = np.arange(400,2501,1)
-            fwhm_prosail = np.ones(centers_prosail.size)
             # initialize spectral sampler object to perform the spectral
             # convolution from 1nm ProSAIL output to the sensor's spectral
             # resolution using a Gaussian spectral response function
@@ -219,13 +224,28 @@ class RTM:
             if (idx+1)%self._nstep == 0:
                 print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
 
+            # check if the spectrum has an invalid green peak (optionally, following
+            # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
+            if remove_invalid_green_peaks:
+                valid = green_is_valid(wvls=centers_prosail, spectrum=spectrum)
+                # set invalid spectra to NaN (so they can be filtered out) and continue
+                if not valid:
+                    self._lut.samples.at[idx,sensor_bands] = np.nan
+                    continue
+
             # resample to the spectral resolution of sensor
             if fpath_srf is None:
                 sensor_spectrum = resampler(spectrum)
             else:
                 # resample RTM output based on true SRFs
-                print('hallo')
-                
+                prosail_df = pd.DataFrame(
+                    {'wvl': centers_prosail, 'prosail': spectrum}
+                )
+                sensor_spectrum = resample_spectra(
+                    spectral_df=prosail_df, sat_srf=srf_df, wl_column='wvl'
+                )
+                sensor_spectrum = sensor_spectrum[0].values
+
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:

@@ -5,7 +5,7 @@ A base class for configuring the RTM inversion and trait retrieval
 import numpy as np
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 class RTMConfig:
     """
@@ -14,7 +14,7 @@ class RTMConfig:
     def __init__(
             self,
             traits: List[str],
-            rtm_params: Path,
+            lut_params: Path,
             rtm: Optional[str] = 'prosail'
         ):
         """
@@ -31,12 +31,12 @@ class RTMConfig:
             default
         """
         self.traits = traits
-        self.rtm_params = rtm_params
+        self.lut_params = lut_params
         self.rtm = rtm
 
         @property
-        def rtm_params() -> Path:
-            return self.rtm_params
+        def lut_params() -> Path:
+            return self.lut_params
 
         @property
         def traits() -> List[str]:
@@ -45,6 +45,9 @@ class RTMConfig:
         @property
         def rtm() -> str:
             return self.rtm
+
+        def to_dict(self) -> Dict[str, Any]:
+            return self.__dict__
 
 class LookupTableBasedInversion(RTMConfig):
     """
@@ -55,7 +58,9 @@ class LookupTableBasedInversion(RTMConfig):
             n_solutions: int,
             cost_function: str,
             lut_size: int,
-            method: Optional[str] = 'LHS',
+            sampling_method: Optional[str] = 'LHS',
+            fpath_srf: Optional[str] = None,
+            remove_invalid_green_peaks: Optional[bool] = True,
             **kwargs
         ):
         """
@@ -70,16 +75,27 @@ class LookupTableBasedInversion(RTMConfig):
             observed and simulated spectra
         :param lut_size:
             size of the lookup-table (number of spectra to simulate)
-        :param method:
+        :param sampling_method:
             method to use for sampling the lookup-table
+        :param fpath_srf:
+            path to Spreadsheet with spectral response functions to use
+            for resampling PROSAIL spectra to the spectral resolution of a
+            given sensor. If not provided (default) uses central wavelength and
+            FWHMs of the sensor assuming a Gaussian spectral response function.
+        :param remove_invalid_green_peaks:
+            if True (default) removes PROSAIL spectra with a green reflectance
+            peak shifted towards unrealistically short wavelengths (blue region
+            of the spectrum) as suggested by Wocher et al. (2020).
         :param kwargs:
             keyword arguments to pass to super-class
         """
         # call constructor of super-class
         super().__init__(**kwargs)
         self.cost_function = cost_function
-        self.method = method
+        self.sampling_method = sampling_method
         self.lut_size = lut_size
+        self.fpath_srf = fpath_srf
+        self.remove_invalid_green_peaks = remove_invalid_green_peaks
 
         # adopt number of solutions if given in relative numbers [0,1[
         if 0 < n_solutions < 1:
@@ -106,5 +122,5 @@ class LookupTableBasedInversion(RTMConfig):
             return self.cost_function
 
         @property
-        def method() -> str:
+        def sampling_method() -> str:
             return self.method
