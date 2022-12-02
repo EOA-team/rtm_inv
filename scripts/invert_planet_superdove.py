@@ -68,7 +68,8 @@ def traits_from_ps_pixels(
             viewing_zenith_angle=viewing_zenith_angle,
             solar_azimuth_angle=solar_azimuth_angle,
             viewing_azimuth_angle=viewing_azimuth_angle,
-            lut_size=rtm_config.lut_size
+            lut_size=rtm_config.lut_size,
+            remove_invalid_green_peaks=True
         )
 
         lut_spectra = lut[['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8']].values
@@ -125,8 +126,8 @@ if __name__ == '__main__':
     traits = ['lai']
     n_solutions = 0.1
     cost_function = 'rmse'
-    rtm_params = Path('../parameters/prosail_frs.csv')
-    lut_size = 50000
+    rtm_params = Path('../parameters/prosail_danner_etal_phases.csv')
+    lut_size = 20000
     rtm_config = LookupTableBasedInversion(
         traits=traits,
         n_solutions=n_solutions,

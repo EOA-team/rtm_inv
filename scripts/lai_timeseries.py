@@ -129,7 +129,7 @@ def plot_crop_timeseries(
     Plots time series of NDVI, GRP-LAI and ProSAIL LAI for all
     crop types available
     """
-    # get mapper of crop code and crop type
+    # get scenes of crop code and crop type
     gdf = gpd.read_file(parcels)
     crop_codes = gdf['crop_code'].unique()
     mapping = dict.fromkeys(crop_codes)

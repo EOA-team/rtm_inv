@@ -8,7 +8,7 @@ Adapter to radiative transfer models (RTMs). RTMs currently implemented
 import numpy as np
 import pandas as pd
 import prosail
-import spart
+# import spart
 
 from pathlib import Path
 from spectral import BandResampler
@@ -25,7 +25,7 @@ class SPARTParameters:
     class defining which leaf, canopy, soil and atmosphere parameters
     are required to run SPART simulations.
 
-    This class helps mapper the entries of the CSV with the SPART model
+    This class helps scenes the entries of the CSV with the SPART model
     parameterization to the actual SPART function call so that user do not
     have to take care about the order of parameters.
     """

@@ -87,17 +87,17 @@ def traits_from_s2(
         optional attribute column in the `aoi` entry to be used as unique
         ID. If not available a random UUID is generated.
     :param mapper_configs:
-        optional further mapper configurations to pass to
-        `eodal.operational.mapper.MapperConfigs`
+        optional further scenes configurations to pass to
+        `eodal.operational.scenes.MapperConfigs`
     """
-    # setup Sentinel-2 mapper to get the relevant scenes
+    # setup Sentinel-2 scenes to get the relevant scenes
     mapper_configs = MapperConfigs(
         spatial_resolution=spatial_resolution,
         resampling_method=resampling_method,
         **mapper_configs
     )
 
-    # get a new mapper instance
+    # get a new scenes instance
     mapper = Sentinel2Mapper(
         date_start=date_start,
         date_end=date_end,
