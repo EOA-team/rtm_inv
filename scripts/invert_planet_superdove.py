@@ -63,7 +63,7 @@ def traits_from_ps_pixels(
         # call function to generate lookup-table with simulated spectra
         lut = generate_lut(
             sensor=platform,
-            lut_params=rtm_config.rtm_params,
+            lut_params=rtm_config.lut_params,
             solar_zenith_angle=solar_zenith_angle,
             viewing_zenith_angle=viewing_zenith_angle,
             solar_azimuth_angle=solar_azimuth_angle,
@@ -91,22 +91,28 @@ def traits_from_ps_pixels(
         mask[:,0] = False
 
         # inversion
-        lut_idxs = inv_img(
+        lut_idxs, cost_function_values = inv_img(
             lut=lut_spectra,
             img=sat_spectra,
             mask=mask,
             cost_function=rtm_config.cost_function,
             n_solutions=rtm_config.n_solutions,
         )
-        trait_img = retrieve_traits(
+        trait_img, q05_img, q95_img = retrieve_traits(
             lut=lut,
             lut_idxs=lut_idxs,
-            traits=rtm_config.traits
+            traits=rtm_config.traits,
+            cost_function_values=cost_function_values,
+            measure='weighted_mean'
         )
 
         # add traits to dataframe
         for rdx, trait in enumerate(rtm_config.traits):
             data[trait] = trait_img[rdx,:,0]
+            data[f'{trait}_q05'] = q05_img[rdx,:,0]
+            data[f'{trait}_q95'] = q95_img[rdx,:,0]
+        data[f'inversion_min_error'] = cost_function_values[0,:,0]
+        data[f'inversion_max_error'] = cost_function_values[-1,:,0]
         results.append(data)
 
         logger.info(f'Finished {scene[0]}')
@@ -115,25 +121,26 @@ def traits_from_ps_pixels(
 
 if __name__ == '__main__':
 
-    dataset = 'pl_BW_cleanedcd_v4'
+    dataset = 'pl_BW_cleaned_v4'
 
     # GeoPackage with Planet pixels
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/v4_planet_files')
     ps_pixels = data_dir.joinpath(f'{dataset}.gpkg')
-    out_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/LAI_v4_processing')
+    out_dir = data_dir.joinpath('lukas_work')
+    out_dir.mkdir(exist_ok=True)
 
     # RTM configuration
     traits = ['lai']
-    n_solutions = 0.1
+    n_solutions = 100
     cost_function = 'rmse'
-    rtm_params = Path('../parameters/prosail_danner_etal_phases.csv')
-    lut_size = 20000
+    rtm_params = Path('../parameters/prosail_danner-etal_all_phases.csv')
+    lut_size = 50000
     rtm_config = LookupTableBasedInversion(
         traits=traits,
         n_solutions=n_solutions,
         cost_function=cost_function,
         lut_size=lut_size,
-        rtm_params=rtm_params
+        lut_params=rtm_params
     )
 
     ps_pixels_traits = traits_from_ps_pixels(
@@ -142,5 +149,5 @@ if __name__ == '__main__':
     )
 
     # save results to file
-    fname = out_dir.joinpath(f'{dataset}_lai_frs_{lut_size}_{cost_function}.gpkg')
+    fname = out_dir.joinpath(f'{dataset}_lai_frs_{lut_size}_{cost_function}_{n_solutions}.gpkg')
     ps_pixels_traits.to_file(fname, driver='GPKG')
