@@ -63,7 +63,7 @@ def traits_from_ps_pixels(
         # call function to generate lookup-table with simulated spectra
         lut = generate_lut(
             sensor=platform,
-            lut_params=rtm_config.rtm_params,
+            lut_params=rtm_config.lut_params,
             solar_zenith_angle=solar_zenith_angle,
             viewing_zenith_angle=viewing_zenith_angle,
             solar_azimuth_angle=solar_azimuth_angle,
@@ -91,7 +91,7 @@ def traits_from_ps_pixels(
         mask[:,0] = False
 
         # inversion
-        lut_idxs = inv_img(
+        lut_idxs, cost_function_values = inv_img(
             lut=lut_spectra,
             img=sat_spectra,
             mask=mask,
@@ -101,7 +101,9 @@ def traits_from_ps_pixels(
         trait_img = retrieve_traits(
             lut=lut,
             lut_idxs=lut_idxs,
-            traits=rtm_config.traits
+            traits=rtm_config.traits,
+            measure='weighted_mean',
+            cost_function_values=cost_function_values
         )
 
         # add traits to dataframe
@@ -115,25 +117,25 @@ def traits_from_ps_pixels(
 
 if __name__ == '__main__':
 
-    dataset = 'pl_BW_cleanedcd_v4'
+    dataset = 'pl_BW_cleaned_v4'
 
     # GeoPackage with Planet pixels
     data_dir = Path('/home/graflu/public/Evaluation/Projects/KP0031_lgraf_PhenomEn/MA_Supervision/22_Samuel-Wildhaber/v4_planet_files')
     ps_pixels = data_dir.joinpath(f'{dataset}.gpkg')
-    out_dir = Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/LAI_v4_processing')
+    out_dir = data_dir # Path('/home/graflu/public/Evaluation/Hiwi/2022_samuel_wildhaber_MSc/LAI_v4_processing')
 
     # RTM configuration
     traits = ['lai']
     n_solutions = 0.1
     cost_function = 'rmse'
-    rtm_params = Path('../parameters/prosail_danner_etal_phases.csv')
+    rtm_params = data_dir.joinpath('prosail_danner_etal_all_phases.csv')
     lut_size = 20000
     rtm_config = LookupTableBasedInversion(
         traits=traits,
         n_solutions=n_solutions,
         cost_function=cost_function,
         lut_size=lut_size,
-        rtm_params=rtm_params
+        lut_params=rtm_params
     )
 
     ps_pixels_traits = traits_from_ps_pixels(
