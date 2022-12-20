@@ -114,13 +114,17 @@ def _retrieve_traits(
     # allocate array for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
     trait_img = np.zeros(trait_img_shape, dtype='float64')
+    q05_img = np.zeros(trait_img_shape, dtype='float64')
+    q95_img = np.zeros(trait_img_shape, dtype='float64')
     # loop over pixels and write inversion result to trait_img
     for row in prange(rows):
         for col in range(cols):
             # continue if the pixel was masked before and has therefore no
             # solutions
             if (lut_idxs[:,row,col] == -1).all():
-                trait_img[:,row,col] = np.nan
+                trait_img[:,row,col] = np.nan,
+                q05_img[:,row,col] = np.nan
+                q95_img[:,row,col] = np.nan
                 continue
             trait_vals_n_solutions = trait_values[lut_idxs[:,row,col],:]
             for trait_idx in range(trait_values.shape[1]):
@@ -134,8 +138,11 @@ def _retrieve_traits(
                         weight = 0.1 * cost_function_values[solution,row,col] / denominator
                         vest_sum += weight * trait_vals_n_solutions[solution,trait_idx]
                     trait_img[trait_idx,row,col] = vest_sum
+                # get quantiles of errors
+                q05_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.5)
+                q95_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.95)
 
-    return trait_img
+    return trait_img, q05_img, q95_img
 
 def retrieve_traits(
         lut: pd.DataFrame,
