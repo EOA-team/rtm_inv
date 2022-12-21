@@ -89,7 +89,7 @@ def _retrieve_traits(
         lut_idxs: np.ndarray,
         cost_function_values: np.ndarray,
         measure: Optional[str] = 'Median'
-    ) -> Tuple[np.ndarray, nd.array, nd.array]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses the indices of the best matching spectra to retrieve the
     corresponding trait values from the LUT
