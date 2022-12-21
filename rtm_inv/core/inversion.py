@@ -89,7 +89,7 @@ def _retrieve_traits(
         lut_idxs: np.ndarray,
         cost_function_values: np.ndarray,
         measure: Optional[str] = 'Median'
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, nd.array, nd.array]:
     """
     Uses the indices of the best matching spectra to retrieve the
     corresponding trait values from the LUT
@@ -107,11 +107,19 @@ def _retrieve_traits(
         and "weighted_mean" (mean weighted by the cost function values
         of the *n* best solutions)
     :returns:
-        3-d image with trait values with shape (n_traits, nrows, ncols)
+        tuple with 3 arrays. The first item contains a3-d image with
+        trait values with shape (n_traits, nrows, ncols). The second and third
+        item contain the 5 and 95% percentile of the predicted traits across
+        the *n* solutions, respectively. This gives a measure of the
+        variability of the *n* solutions found.
     """
+    # check inputs
+    measure = measure.upper()
+    if measure not in ['MEDIAN', 'WEIGHTED_MEAN', 'MEAN']:
+        raise ValueError(f'Measure {measure} is not available')
     n_traits = trait_values.shape[1]
     n_solutions, rows, cols = lut_idxs.shape
-    # allocate array for storing inversion results
+    # allocate arrays for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
     trait_img = np.zeros(trait_img_shape, dtype='float64')
     q05_img = np.zeros(trait_img_shape, dtype='float64')
@@ -128,17 +136,20 @@ def _retrieve_traits(
                 continue
             trait_vals_n_solutions = trait_values[lut_idxs[:,row,col],:]
             for trait_idx in range(trait_values.shape[1]):
-                if measure == 'Median':
+                if measure == 'MEDIAN':
                     trait_img[trait_idx,row,col] = \
                         np.median(trait_vals_n_solutions[:,trait_idx])
-                elif measure == 'weighted_mean':
+                elif measure == 'MEAN':
+                    trait_img[trait_idx,row,col] = \
+                        np.mean(trait_vals_n_solutions[:,trait_idx])
+                elif measure == 'WEIGHTED_MEAN':
                     denominator = np.sum(0.1 * cost_function_values[:,row,col])
                     vest_sum = 0.
                     for solution in range(n_solutions):
                         weight = 0.1 * cost_function_values[solution,row,col] / denominator
                         vest_sum += weight * trait_vals_n_solutions[solution,trait_idx]
                     trait_img[trait_idx,row,col] = vest_sum
-                # get quantiles of errors
+                # get quantiles of traits
                 q05_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.5)
                 q95_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.95)
 
