@@ -3,12 +3,27 @@ Adapter to radiative transfer models (RTMs). RTMs currently implemented
 
     - ProSAIL (4SAIL with either Prospect-5 or Prospect-D as leaf model)
     - SPART (BSM, 4SAIL, SMAC and Prospect-5 or Prospect-PRO)
+
+Copyright (C) 2022 Lukas Valentin Graf
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import numpy as np
 import pandas as pd
 import prosail
-# import spart
+import SPART as spart
 
 from pathlib import Path
 from spectral import BandResampler
@@ -88,10 +103,14 @@ class RTM:
         self._rtm = rtm
         self._nstep = n_step
 
-    def _run_spart(self, sensor: str, output: Optional[str] = 'R_TOC',
-                   doy: Optional[int] = 100) -> None:
+    def _run_spart(
+        self,
+        sensor: str,
+        output: Optional[str] = 'R_TOC',
+        doy: Optional[int] = 100
+    ) -> None:
         """
-        Runs the SPART RTM
+        Runs the SPART RTM.
 
         :param sensor:
             name of the sensor for which to simulate the spectra
@@ -99,6 +118,9 @@ class RTM:
             output of the simulation to use. Top-of-Canopy reflectance (R_TOC)
             by default. Further options are 'R_TOA' (top-of-atmosphere reflectance)
             and 'L_TOA' (top-of-atmosphere radiance)
+        :param doy:
+            day of year (doy) for which to run the simulation (required for sun-earth
+            distance calculate). Default is doy 100.
         """
         # get sensor
         try:
@@ -148,10 +170,14 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
-    def _run_prosail(self, sensor: str, fpath_srf: Optional[Path] = None,
-                     remove_invalid_green_peaks: Optional[bool] = False) -> None:
+    def _run_prosail(
+        self,
+        sensor: str,
+        fpath_srf: Optional[Path] = None,
+        remove_invalid_green_peaks: Optional[bool] = False
+    ) -> None:
         """
-        Runs the ProSAIL RTM
+        Runs the ProSAIL RTM.
 
         :param sensor:
             name of the sensor for which to simulate the spectra

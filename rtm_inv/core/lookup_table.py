@@ -1,19 +1,40 @@
 '''
 Module to create lookup-tables (LUT) of synthetic spectra
+
+Copyright (C) 2022 Lukas Valentin Graf
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+
+from __future__ import annotations
 
 import lhsmdu
 import numpy as np
 import pandas as pd
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from rtm_inv.core.distributions import Distributions
 from rtm_inv.core.rtm_adapter import RTM
-from rtm_inv.core.utils import chlorophyll_carotiniod_constraint, glai_ccc_constraint, \
+from rtm_inv.core.utils import (
+    chlorophyll_carotiniod_constraint,
+    glai_ccc_constraint,
     transform_lai
+)
 
+# sampling methods available
 sampling_methods: List[str] = ['LHS', 'FRS']
 
 class LookupTable(object):
@@ -25,10 +46,13 @@ class LookupTable(object):
         RTM trait samples generated using a custom sample strategy
         sampling. RTM-generated spectra are appended as additional
         columns.
+    :attrib lai_transformed:
+        was LAI transformed using approach proposed by Verhoef et al.
+        (2018, https://doi.org/10.1016/j.rse.2017.08.006)?
     """
     def __init__(
             self,
-            params: Union[Path,pd.DataFrame]
+            params: Path | pd.DataFrame
         ):
         """
         creates a new ``Lookup Table`` instance
@@ -47,7 +71,7 @@ class LookupTable(object):
         self.lai_transformed = False
 
     @property
-    def samples(self) -> Union[pd.DataFrame, None]:
+    def samples(self) -> pd.DataFrame | None:
         """
         Trait samples for generating synthetic spectra
         """
@@ -77,7 +101,7 @@ class LookupTable(object):
         Currently supported sampling schemes are:
 
         - Latin Hypercube Sampling (LHS)
-        - Fully Random Sampling (FRS)
+        - Fully Random Sampling (FRS) using distributions of traits
         - ...
 
         All parameters (traits) are sampled, whose distribution is not set
@@ -217,7 +241,7 @@ def _setup(
 
 def generate_lut(
         sensor: str,
-        lut_params: Union[Path, pd.DataFrame],
+        lut_params: Path | pd.DataFrame,
         lut_size: Optional[int] = 50000,
         rtm_name: Optional[str] = 'prosail',
         sampling_method: Optional[str] = 'LHS',
