@@ -103,7 +103,7 @@ def traits_from_ps_pixels(
             lut_idxs=lut_idxs,
             traits=rtm_config.traits,
             cost_function_values=cost_function_values,
-            measure='weighted_mean'
+            measure='median'
         )
 
         # add traits to dataframe
