@@ -166,7 +166,7 @@ def _retrieve_traits(
                         vest_sum += weight * trait_vals_n_solutions[solution,trait_idx]
                     trait_img[trait_idx,row,col] = vest_sum
                 # get quantiles of traits
-                q05_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.5)
+                q05_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.05)
                 q95_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.95)
 
     return trait_img, q05_img, q95_img
