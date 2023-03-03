@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 import pandas as pd
-import prosail
+import pyprosail
 import SPART as spart
 
 from pathlib import Path
@@ -65,11 +65,12 @@ class ProSAILParameters:
 
     prospect5 = ['n', 'cab', 'car', 'cbrown', 'cw', 'cm']
     prospectD = ['n', 'cab', 'car', 'cbrown', 'cw', 'cm', 'ant']
-    fourSAIL= [
-        'lai', 'lidfa', 'lidfb', 'psoil', 'rsoil', \
-        'hspot', 'tts', 'tto', 'phi', 'typelidf', \
-        'rsoil0', 'soil_spectrum1', 'soil_spectrum2', 'alpha'
-    ]
+    # fourSAIL= [
+    #     'lai', 'lidfa', 'lidfb', 'psoil', 'rsoil', \
+    #     'hspot', 'tts', 'tto', 'phi', 'typelidf', \
+    #     'rsoil0', 'soil_spectrum1', 'soil_spectrum2', 'alpha'
+    # ]
+    SAIL = ['LAI', 'hspot', 'tts', 'tto', 'psi', 'psoil', 'TypeLidf', 'LIDFa', 'LIDFb']
 
 class RTM:
     """
@@ -191,11 +192,7 @@ class RTM:
             as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
         """
         # check if Prospect version
-        if set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
-            prospect_version = '5'
-        elif set(self._lut.samples.columns).issubset(ProSAILParameters.prospectD):
-            prospect_version = 'D'
-        else:
+        if not set(ProSAILParameters.prospect5).issubset(set(self._lut.samples.columns)):
             raise ValueError('Cannot determine Prospect Version')
 
         # get sensor
@@ -237,18 +234,16 @@ class RTM:
         traits = [x for x in traits if not x.startswith('B')]
         lut = self._lut.samples[traits].copy()
         for idx, record in lut.iterrows():
-            # set the PROSPECT version
             record_inp = record.to_dict()
-            record_inp.update({
-                'prospect_version': prospect_version
-            })
             # run ProSAIL
             try:
-                spectrum = prosail.run_prosail(**record_inp)
+                if record_inp['typelidf'] == 2:
+                    record_inp.update({'lidfb': 0})
+                spectrum = pyprosail.run(**record_inp)[:,1]
             except Exception as e:
                 raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
-            if (idx+1)%self._nstep == 0:
-                print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
+            # if (idx+1)%self._nstep == 0:
+            #     print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
 
             # check if the spectrum has an invalid green peak (optionally, following
             # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
