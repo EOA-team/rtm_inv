@@ -242,8 +242,8 @@ class RTM:
                 spectrum = pyprosail.run(**record_inp)[:,1]
             except Exception as e:
                 raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
-            if (idx+1)%self._nstep == 0:
-                print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
+            # if (idx+1)%self._nstep == 0:
+            #     print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
 
             # check if the spectrum has an invalid green peak (optionally, following
             # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
