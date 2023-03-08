@@ -20,17 +20,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import multiprocessing
 import numpy as np
 import pandas as pd
 import pyprosail
 import SPART as spart
 
+from dask.distributed import Client
 from pathlib import Path
 from spectral import BandResampler
-from typing import Optional
+from typing import List, Optional
 
 from rtm_inv.core.sensors import Sensors
 from rtm_inv.core.utils import green_is_valid, resample_spectra
+
+def get_cpu_count() -> int:
+    """
+    Get number of CPUs available minus 1 to save resources
+    for other processes
+
+    :returns:
+        number of CPUs minus 1
+    """
+    return multiprocessing.cpu_count() - 1
 
 class RTMRunTimeError(Exception):
     pass
@@ -171,6 +183,47 @@ class RTM:
             spart_sim = spart_model.run()
             self._lut.samples.loc[idx,sensor_bands] = spart_sim[output].values
 
+    def _run_prosail_parallel(
+        self,
+        record: pd.Series,
+        remove_invalid_green_peaks,
+        centers_prosail: List[int],
+        fpath_srf: None | Path,
+        srf_df: None | pd.DataFrame,
+        resampler: None | BandResampler
+    ) -> None:
+        record_inp = record.to_dict()
+        # run ProSAIL
+        try:
+            if record_inp['typelidf'] == 2:
+                record_inp.update({'lidfb': 0})
+            spectrum = pyprosail.run(**record_inp)[:,1]
+        except Exception as e:
+            raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
+
+        # check if the spectrum has an invalid green peak (optionally, following
+        # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
+        if remove_invalid_green_peaks:
+            valid = green_is_valid(wvls=centers_prosail, spectrum=spectrum)
+            # set invalid spectra to NaN (so they can be filtered out) and continue
+            if not valid:
+                return np.nan
+
+        # resample to the spectral resolution of sensor
+        if fpath_srf is None:
+            sensor_spectrum = resampler(spectrum)
+        else:
+            # resample RTM output based on true SRFs
+            prosail_df = pd.DataFrame(
+                {'wvl': centers_prosail, 'prosail': spectrum}
+            )
+            sensor_spectrum = resample_spectra(
+                spectral_df=prosail_df, sat_srf=srf_df, wl_column='wvl'
+            )
+            sensor_spectrum = sensor_spectrum[0].values
+
+        return sensor_spectrum
+
     def _run_prosail(
         self,
         sensor: str,
@@ -210,6 +263,8 @@ class RTM:
         fwhm_prosail = np.ones(centers_prosail.size)
 
         # no SRF available
+        resampler = None
+        srf_df = None
         if fpath_srf is None:
             # get central wavelengths and band width per band
             centers_sensor, fwhm_sensor = sensor.central_wvls, sensor.band_widths
@@ -227,46 +282,23 @@ class RTM:
         else:
             srf_df = sensor.read_srf_from_xls(fpath_srf)
 
+        client = Client(n_workers=get_cpu_count())
+
         # iterate through LUT and run ProSAIL
-        spectrum = None
         traits = self._lut.samples.columns
         # drop band columns B01, B02, etc.
         traits = [x for x in traits if not x.startswith('B')]
         lut = self._lut.samples[traits].copy()
         for idx, record in lut.iterrows():
-            record_inp = record.to_dict()
-            # run ProSAIL
-            try:
-                if record_inp['typelidf'] == 2:
-                    record_inp.update({'lidfb': 0})
-                spectrum = pyprosail.run(**record_inp)[:,1]
-            except Exception as e:
-                raise RTMRunTimeError(f'Simulation of spectrum failed: {e}')
-            # if (idx+1)%self._nstep == 0:
-            #     print(f'Simulated spectrum {idx+1}/{self._lut.samples.shape[0]}')
-
-            # check if the spectrum has an invalid green peak (optionally, following
-            # the approach by Wocher et al., 2020, https://doi.org/10.1016/j.jag.2020.102219)
-            if remove_invalid_green_peaks:
-                valid = green_is_valid(wvls=centers_prosail, spectrum=spectrum)
-                # set invalid spectra to NaN (so they can be filtered out) and continue
-                if not valid:
-                    self._lut.samples.at[idx,sensor_bands] = np.nan
-                    continue
-
-            # resample to the spectral resolution of sensor
-            if fpath_srf is None:
-                sensor_spectrum = resampler(spectrum)
-            else:
-                # resample RTM output based on true SRFs
-                prosail_df = pd.DataFrame(
-                    {'wvl': centers_prosail, 'prosail': spectrum}
-                )
-                sensor_spectrum = resample_spectra(
-                    spectral_df=prosail_df, sat_srf=srf_df, wl_column='wvl'
-                )
-                sensor_spectrum = sensor_spectrum[0].values
-
+            sensor_spectrum = client.submit(
+                self._run_prosail_parallel,
+                record,
+                remove_invalid_green_peaks,
+                centers_prosail,
+                fpath_srf,
+                srf_df,
+                resampler
+            ).result()
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:
