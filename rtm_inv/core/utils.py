@@ -38,7 +38,7 @@ def resample_spectra(spectral_df: pd.DataFrame, sat_srf: pd.DataFrame, wl_column
     innerdf = spectral_df.merge(sat_srf, on=wl_column)
     sat_srf = innerdf.loc[:, [wl_column, *sat_bands]]
 
-    # iterate over every spectra
+    # iterate over every spectrum
     out_list = []
     for spectrum in indiv_spectra:
 

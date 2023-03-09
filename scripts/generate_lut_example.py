@@ -41,6 +41,7 @@ if __name__ == '__main__':
         linearize_lai=True
     )
     lut_srf.dropna(inplace=True)
+    lut_srf.to_csv(Path('test_lut.csv'))
 
     # lut_no_srf = generate_lut(
     #     sensor=platform,
