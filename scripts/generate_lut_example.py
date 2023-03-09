@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # set up lookup-table configurations
     rtm_params = Path('../parameters/prosail_danner-etal.csv')
     lut_size = 1000
-    sampling_method = 'lhs' # latin-hypercube; alternative: frs - fully random sampling
+    sampling_method = 'frs' # latin-hypercube; alternative: frs - fully random sampling
     platform = 'Sentinel2A'
 
     # viewing and illumination angles (these are just randomly selected numbers, here)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         sampling_method=sampling_method,
         fpath_srf=fpath_srf,
         remove_invalid_green_peaks=True,
-        linearize_lai=True
+        linearize_lai=False
     )
     lut_srf.dropna(inplace=True)
     lut_srf.to_csv(Path('test_lut.csv'))
