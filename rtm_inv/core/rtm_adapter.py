@@ -282,7 +282,7 @@ class RTM:
         else:
             srf_df = sensor.read_srf_from_xls(fpath_srf)
 
-        client = Client(n_workers=get_cpu_count())
+        # client = Client(n_workers=get_cpu_count())
 
         # iterate through LUT and run ProSAIL
         traits = self._lut.samples.columns
@@ -290,15 +290,23 @@ class RTM:
         traits = [x for x in traits if not x.startswith('B')]
         lut = self._lut.samples[traits].copy()
         for idx, record in lut.iterrows():
-            sensor_spectrum = client.submit(
-                self._run_prosail_parallel,
+            # sensor_spectrum = client.submit(
+            #     self._run_prosail_parallel,
+            #     record,
+            #     remove_invalid_green_peaks,
+            #     centers_prosail,
+            #     fpath_srf,
+            #     srf_df,
+            #     resampler
+            # ).result()
+            sensor_spectrum = self._run_prosail_parallel(
                 record,
                 remove_invalid_green_peaks,
                 centers_prosail,
                 fpath_srf,
                 srf_df,
                 resampler
-            ).result()
+            )
             self._lut.samples.at[idx,sensor_bands] = sensor_spectrum
 
     def simulate_spectra(self, sensor: str, **kwargs) -> pd.DataFrame:
