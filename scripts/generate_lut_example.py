@@ -4,6 +4,8 @@ Created on Oct 4, 2022
 @author: graflu
 '''
 
+import time
+
 from pathlib import Path
 
 from rtm_inv.core.lookup_table import generate_lut
@@ -13,7 +15,7 @@ if __name__ == '__main__':
     # set up lookup-table configurations
     rtm_params = Path('../parameters/prosail_danner-etal.csv')
     lut_size = 1000
-    sampling_method = 'lhs' # latin-hypercube; alternative: frs - fully random sampling
+    sampling_method = 'frs' # latin-hypercube; alternative: frs - fully random sampling
     platform = 'Sentinel2A'
 
     # viewing and illumination angles (these are just randomly selected numbers, here)
@@ -27,6 +29,7 @@ if __name__ == '__main__':
 
     # generate the lookup-table - depending on the size of it this might take a while
     # the result is a pandas DataFrame with leaf and canopy parameters + ProSAIL spectra
+    start = time.time()
     lut_srf = generate_lut(
         sensor=platform,
         lut_params=rtm_params,
@@ -38,8 +41,10 @@ if __name__ == '__main__':
         sampling_method=sampling_method,
         fpath_srf=fpath_srf,
         remove_invalid_green_peaks=True,
-        linearize_lai=True
+        linearize_lai=False
     )
+    end = time.time()
+    print(f'Elapsed: {end-start} sec')
     lut_srf.dropna(inplace=True)
     lut_srf.to_csv(Path('test_lut.csv'))
 
