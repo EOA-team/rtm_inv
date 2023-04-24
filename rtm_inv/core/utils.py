@@ -52,7 +52,7 @@ def resample_spectra(spectral_df: pd.DataFrame, sat_srf: pd.DataFrame, wl_column
             # start the resampling process. First, multiply the 1nm RTM
             # output with the spectral response function of the target
             # band
-            sim_vec = spec_df * sat_response
+            sim_vec = spec_df.values * sat_response.values
             # set zeroes to NA for calculations
             sim_vec[sim_vec == 0] = np.nan
 
