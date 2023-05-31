@@ -34,6 +34,8 @@ setuptools.setup(
                       'numpy',
                       'matplotlib', 
                       'prosail',
-                      'spectral'
+                      'spectral',
+                      'spart-python',
+                      'openpyxl'
                       ]
 )
