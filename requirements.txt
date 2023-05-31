@@ -5,3 +5,4 @@ lhsmdu
 # eodal
 pandas
 spart-python
+openpyxl
