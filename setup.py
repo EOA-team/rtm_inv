@@ -36,6 +36,7 @@ setuptools.setup(
                       'prosail',
                       'spectral',
                       'spart-python',
-                      'openpyxl'
+                      'openpyxl',
+                      'lhsmdu'
                       ]
 )
