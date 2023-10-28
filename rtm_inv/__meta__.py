@@ -6,10 +6,11 @@ path = name.lower().replace("-", "_").replace(" ", "_")
 # https://semver.org
 # version = "0.1.dev0"
 author = (
-    "Lukas Valentin Graf (Crop Science, ETH Zurich and EOA-Team Agroscope Reckenholz, Zurich, Switzerland)"
+    "Lukas Valentin Graf (Crop Science, ETH Zurich and EOA-Team " +
+    "Agroscope Reckenholz, Zurich, Switzerland)"
 )
 author_email = ""
-description = "Python library for radiative transfer model inversion"  # One-liner
+description = "Python library for radiative transfer model inversion"
 url = "https://github.com/EOA-team/rtm_inv"  # your project home-page
 license = "GNU General Public License version 3"  # See https://choosealicense.com
 version = "0.1"
