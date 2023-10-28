@@ -37,6 +37,7 @@ from rtm_inv.core.utils import (
 # sampling methods available
 sampling_methods: List[str] = ['LHS', 'FRS']
 
+
 class LookupTable(object):
     """
     Lookup-table with RTM simulated spectra plus corresponding
@@ -51,9 +52,9 @@ class LookupTable(object):
         (2018, https://doi.org/10.1016/j.rse.2017.08.006)?
     """
     def __init__(
-            self,
-            params: Path | pd.DataFrame
-        ):
+        self,
+        params: Path | pd.DataFrame
+    ):
         """
         creates a new ``Lookup Table`` instance
 
@@ -96,7 +97,7 @@ class LookupTable(object):
             seed_value: Optional[int] = 0,
             apply_glai_ccc_constraint: Optional[bool] = True,
             apply_chlorophyll_carotiniod_constraint: Optional[bool] = True
-        ):
+    ) -> None:
         """
         Sample parameter values using a custom sampling scheme.
 
@@ -125,8 +126,8 @@ class LookupTable(object):
         # set seed to the random number generator
         np.random.seed(seed_value)
 
-        # determine traits to sample (indicated by a distribution different from
-        # "Constant"
+        # determine traits to sample (indicated by a distribution different
+        # from "Constant"
         traits = self._params_df[
             self._params_df['Distribution'].isin(Distributions.distributions)
         ]
@@ -146,11 +147,12 @@ class LookupTable(object):
         # select method and conduct sampling
         if method.upper() == 'LHS':
             # create LHS matrix
-            lhc = lhsmdu.createRandomStandardUniformMatrix(n_traits, num_samples)
+            lhc = lhsmdu.createRandomStandardUniformMatrix(
+                n_traits, num_samples)
             traits_lhc = pd.DataFrame(lhc).transpose()
             traits_lhc.columns = trait_names
-            # replace original values in LHS matrix (scaled between 0 and 1) with
-            # trait values scaled between their specific min and max
+            # replace original values in LHS matrix (scaled between 0 and 1)
+            # with trait values scaled between their specific min and max
             for trait_name in trait_names:
                 traits_lhc[trait_name] = traits_lhc[trait_name] * \
                     traits[trait_name]['Max'] + traits[trait_name]['Min']
@@ -187,17 +189,21 @@ class LookupTable(object):
         for constant_trait in constant_trait_names:
             # for constant traits the value in the min column is used
             # (actually min and max should be set to the same value)
-            sample_traits[constant_trait] = constant_traits[constant_trait]['Min']
+            sample_traits[constant_trait] = \
+                constant_traits[constant_trait]['Min']
 
-        # implement constraints to make the LUT physiologically more plausible, i.e.,
-        # increase the correlation between plant biochemical and biophysical parameters
-        # which is observed in plants but not reflected by a random sampling scheme
+        # implement constraints to make the LUT physiologically more plausible,
+        # i.e., increase the correlation between plant biochemical and
+        # biophysical parameters which is observed in plants but not reflected
+        # by a random dampling scheme
         if apply_glai_ccc_constraint:
             sample_traits = glai_ccc_constraint(lut_df=sample_traits)
         if apply_chlorophyll_carotiniod_constraint:
-            sample_traits = chlorophyll_carotiniod_constraint(lut_df=sample_traits)
+            sample_traits = chlorophyll_carotiniod_constraint(
+                lut_df=sample_traits)
         # set samples to instance variable
         self.samples = sample_traits
+
 
 def _setup(
         lut_params: pd.DataFrame,
@@ -207,7 +213,7 @@ def _setup(
         solar_azimuth_angle: Optional[float] = None,
         viewing_azimuth_angle: Optional[float] = None,
         relative_azimuth_angle: Optional[float] = None
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """
     Setup LUT for RTM (modification of angles and names if required)
     """
@@ -222,11 +228,15 @@ def _setup(
 
     # overwrite angles in LUT DataFrame if provided as fixed values
     if solar_zenith_angle is not None:
-        lut_params.loc[lut_params['Parameter'] == sol_angle,'Min'] = solar_zenith_angle
-        lut_params.loc[lut_params['Parameter'] == sol_angle,'Max'] = solar_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == sol_angle, 'Min'] = \
+            solar_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == sol_angle, 'Max'] = \
+            solar_zenith_angle
     if viewing_zenith_angle is not None:
-        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Min'] = viewing_zenith_angle
-        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Max'] = viewing_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Min'] = \
+            viewing_zenith_angle
+        lut_params.loc[lut_params['Parameter'] == obs_angle, 'Max'] = \
+            viewing_zenith_angle
     # calculate relative azimuth (psi) if viewing angles are passed
     if viewing_azimuth_angle is not None and solar_azimuth_angle is not None:
         psi = abs(solar_azimuth_angle - viewing_azimuth_angle)
@@ -241,11 +251,17 @@ def _setup(
     further_columns = ['Mode', 'Std']
     for further_column in further_columns:
         if further_column in lut_params.columns:
-            lut_params.loc[lut_params['Parameter'] == sol_angle, further_column] = solar_zenith_angle
-            lut_params.loc[lut_params['Parameter'] == obs_angle, further_column] = viewing_zenith_angle
-            lut_params.loc[lut_params['Parameter'] == rel_angle, further_column] = psi
+            lut_params.loc[
+                lut_params['Parameter'] == sol_angle, further_column] = \
+                    solar_zenith_angle
+            lut_params.loc[
+                lut_params['Parameter'] == obs_angle, further_column] = \
+                viewing_zenith_angle
+            lut_params.loc[
+                lut_params['Parameter'] == rel_angle, further_column] = psi
 
     return lut_params
+
 
 def generate_lut(
         sensor: str,
@@ -262,9 +278,10 @@ def generate_lut(
         remove_invalid_green_peaks: Optional[bool] = False,
         linearize_lai: Optional[bool] = False,
         **kwargs
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """
-    Generates a Lookup-Table (LUT) based on radiative transfer model input parameters.
+    Generates a Lookup-Table (LUT) based on radiative transfer model input
+    parameters.
 
     IMPORTANT:
         Depending on the RTM and the size of the LUT the generation of a LUT
@@ -272,41 +289,47 @@ def generate_lut(
 
     :param sensor:
         name of the sensor for which the simulated spectra should be resampled.
-        See `rtm_inv.core.sensors.Sensors` for a list of sensors currently implemented.
+        See `rtm_inv.core.sensors.Sensors` for a list of sensors currently
+        implemented.
     :param lut_params:
-        lookup-table parameters with mininum and maximum range (always required),
-        type of distribution (important to indicate which parameters are constant),
-        mode and std (for Gaussian distributions).
+        lookup-table parameters with mininum and maximum range (always
+        required), type of distribution (important to indicate which parameters
+        are constant), mode and std (for Gaussian distributions).
     :param lut_size:
         number of items (spectra) to simulate in the LUT
     :param rtm_name:
         name of the RTM to call.
     :param sampling_method:
-        sampling method for generating the input parameter space of the LUT. 'LHS'
-        (latin hypercube sampling) by default.
+        sampling method for generating the input parameter space of the LUT.
+        'LHS' (latin hypercube sampling) by default.
     :param solar_zenith_angle:
         solar zenith angle as fixed scene-wide value (optional) in degrees.
     :param viewing_zenith_angle:
-        viewing (observer) zenith angle as fixed scene-wide value (optional) in degrees.
+        viewing (observer) zenith angle as fixed scene-wide value (optional)
+        in degrees.
     :param solar_azimuth_angle:
         solar azimuth angle as fixed scene-wide value (optional) in deg C.
     :param viewing_azimuth_angle:
-        viewing (observer) azimuth angle as fixed scene-wide value (optional) in deg C.
+        viewing (observer) azimuth angle as fixed scene-wide value (optional)
+        in deg C.
     :param relative_azimuth_angle:
-        relative azimuth angle (if available, optional) in deg C. If provided, the relative
-        azimuth angle is not calculated from solar and observer azimuth angle and also
-        not checked against them!
+        relative azimuth angle (if available, optional) in deg C. If provided,
+        the relative azimuth angle is not calculated from solar and observer
+        azimuth angle and also not checked against them!
     :param fpath_srf:
-        if provided uses actual spectral response functions (SRF) for spectral resampling
-        of RTM outputs (usually in 1nm steps) into the spectral resolution of a given sensor
+        if provided uses actual spectral response functions (SRF) for spectral
+        resampling of RTM outputs (usually in 1nm steps) into the spectral
+        resolution of a given sensor.
     :param remove_invalid_green_peaks:
-        remove simulated spectra with unrealistic green peaks (occuring at wavelengths > 547nm)
-        as suggested by Wocher et al. (2020, https://doi.org/10.1016/j.jag.2020.102219).
-        NOTE: When this option is used, spectra not fulfilling the green peak criterion 
-        are set to NaN.
+        remove simulated spectra with unrealistic green peaks (occuring at
+        wavelengths > 547nm) as suggested by Wocher et al.
+        (2020, https://doi.org/10.1016/j.jag.2020.102219).
+        NOTE: When this option is used, spectra not fulfilling the green
+        peak criterion  are set to NaN.
     :param linearize_lai:
         if True, transforms LAI values to a more linearized representation
-        as suggested by Verhoef et al. (2018, https://doi.org/10.1016/j.rse.2017.08.006)
+        as suggested by Verhoef et al. (2018,
+        https://doi.org/10.1016/j.rse.2017.08.006)
     :param kwargs:
         optional keyword-arguments to pass to `LookupTable.generate_samples`
     :returns:
@@ -317,11 +340,13 @@ def generate_lut(
         lut_params = pd.read_csv(lut_params)
 
     # prepare LUTs for RTMs
-    lut_params = _setup(lut_params, rtm_name, solar_zenith_angle, viewing_zenith_angle,
-                        solar_azimuth_angle, viewing_azimuth_angle, relative_azimuth_angle)
+    lut_params = _setup(
+        lut_params, rtm_name, solar_zenith_angle, viewing_zenith_angle,
+        solar_azimuth_angle, viewing_azimuth_angle, relative_azimuth_angle)
     # get input parameter samples first
     lut = LookupTable(params=lut_params)
-    lut.generate_samples(num_samples=lut_size, method=sampling_method, **kwargs)
+    lut.generate_samples(
+        num_samples=lut_size, method=sampling_method, **kwargs)
 
     # and run the RTM in forward mode in the second step
     # outputs get resampled to the spectral resolution of the sensor
@@ -334,5 +359,6 @@ def generate_lut(
     # linearize LAI as proposed by Verhoef et al. (2018,
     # https://doi.org/10.1016/j.rse.2017.08.006)
     if linearize_lai:
-        lut_simulations['lai'] = transform_lai(lut_simulations['lai'], inverse=False)
+        lut_simulations['lai'] = transform_lai(
+            lut_simulations['lai'], inverse=False)
     return lut_simulations

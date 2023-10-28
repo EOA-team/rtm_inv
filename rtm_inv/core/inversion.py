@@ -25,6 +25,7 @@ import pandas as pd
 from numba import njit, prange
 from typing import List, Optional, Tuple
 
+
 @njit(parallel=True, cache=True)
 def inv_img(
         lut: np.ndarray,
@@ -32,7 +33,7 @@ def inv_img(
         mask: np.ndarray,
         cost_function: str,
         n_solutions: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Lookup-table based inversion on images by minimizing a
     cost function using *n* best solutions to improve numerical
@@ -73,31 +74,36 @@ def inv_img(
         for col in range(img.shape[2]):
             # skip masked pixels
             if mask[row, col]:
-                lut_idxs[:,row,col] = -1
+                lut_idxs[:, row, col] = -1
                 continue
             # get sensor spectrum (single pixel)
-            image_ref = img[:,row,col]
-            # image_ref_normalized = np.sum(np.abs(image_ref - (np.mean(image_ref))))
+            image_ref = img[:, row, col]
+
             # cost functions (from EnMap box) implemented in a
-            # way Numba can handle them (cannot use keywords in numpy functions)
+            # way Numba can handle them
+            # (cannot use keywords in numpy functions)
             delta = np.zeros(shape=(lut.shape[0],), dtype='float64')
             for idx in range(lut.shape[0]):
                 if cost_function == 'rmse':
-                    delta[idx] = np.sqrt(np.mean((image_ref - lut[idx,:])**2))
+                    delta[idx] = np.sqrt(np.mean((image_ref - lut[idx, :])**2))
                 elif cost_function == 'mae':
-                    delta[idx] = np.sum(np.abs(image_ref - lut[idx,:]))
+                    delta[idx] = np.sum(np.abs(image_ref - lut[idx, :]))
                 elif cost_function == 'contrast_function':
                     delta[idx] = np.sum(
-                        -np.log10(lut[idx,:] / image_ref) + lut[idx,:] / image_ref
+                        -np.log10(lut[idx, :] / image_ref) + lut[idx, :] /
+                        image_ref
                     )
                 elif cost_function == 'squared_sum_of_differences':
-                    delta[idx] = np.sum((lut[idx,:] - image_ref)**2)
+                    delta[idx] = np.sum((lut[idx, :] - image_ref)**2)
             # find the smallest errors between simulated and observed spectra
             # we need the row index of the corresponding entries in the LUT
             delta_sorted = np.argsort(delta)
-            lut_idxs[:,row,col] = delta_sorted[0:n_solutions]
-            cost_function_values[:,row,col] = delta[delta_sorted[0:n_solutions]]
+            lut_idxs[:, row, col] = delta_sorted[0:n_solutions]
+            cost_function_values[:, row, col] = delta[
+                delta_sorted[0:n_solutions]]
+
     return lut_idxs, cost_function_values
+
 
 # @njit(cache=True, parallel=True)
 def _retrieve_traits(
@@ -105,7 +111,7 @@ def _retrieve_traits(
         lut_idxs: np.ndarray,
         cost_function_values: np.ndarray,
         measure: Optional[str] = 'Median'
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses the indices of the best matching spectra to retrieve the
     corresponding trait values from the LUT
@@ -145,31 +151,39 @@ def _retrieve_traits(
         for col in range(cols):
             # continue if the pixel was masked before and has therefore no
             # solutions
-            if (lut_idxs[:,row,col] == -1).all():
-                trait_img[:,row,col] = np.nan,
-                q05_img[:,row,col] = np.nan
-                q95_img[:,row,col] = np.nan
+            if (lut_idxs[:, row, col] == -1).all():
+                trait_img[:, row, col] = np.nan,
+                q05_img[:, row, col] = np.nan
+                q95_img[:, row, col] = np.nan
                 continue
-            trait_vals_n_solutions = trait_values[lut_idxs[:,row,col],:]
+            trait_vals_n_solutions = trait_values[lut_idxs[:, row, col], :]
             for trait_idx in range(trait_values.shape[1]):
                 if measure == 'MEDIAN':
-                    trait_img[trait_idx,row,col] = \
-                        np.median(trait_vals_n_solutions[:,trait_idx])
+                    trait_img[trait_idx, row, col] = \
+                        np.median(trait_vals_n_solutions[:, trait_idx])
                 elif measure == 'MEAN':
-                    trait_img[trait_idx,row,col] = \
-                        np.mean(trait_vals_n_solutions[:,trait_idx])
+                    trait_img[trait_idx, row, col] = \
+                        np.mean(trait_vals_n_solutions[:, trait_idx])
                 elif measure == 'WEIGHTED_MEAN':
-                    denominator = np.sum(0.1 * cost_function_values[:,row,col])
+                    denominator = np.sum(
+                        0.1 * cost_function_values[:, row, col])
                     vest_sum = 0.
                     for solution in range(n_solutions):
-                        weight = 0.1 * cost_function_values[solution,row,col] / denominator
-                        vest_sum += weight * trait_vals_n_solutions[solution,trait_idx]
-                    trait_img[trait_idx,row,col] = vest_sum
+                        weight = \
+                            0.1 * cost_function_values[solution, row, col] / \
+                            denominator
+                        vest_sum += \
+                            weight * trait_vals_n_solutions[
+                                solution, trait_idx]
+                    trait_img[trait_idx, row, col] = vest_sum
                 # get quantiles of traits
-                q05_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.05)
-                q95_img[trait_idx,row,col] = np.quantile(trait_vals_n_solutions[:,trait_idx], 0.95)
+                q05_img[trait_idx, row, col] = np.quantile(
+                    trait_vals_n_solutions[:, trait_idx], 0.05)
+                q95_img[trait_idx, row, col] = np.quantile(
+                    trait_vals_n_solutions[:, trait_idx], 0.95)
 
     return trait_img, q05_img, q95_img
+
 
 def retrieve_traits(
         lut: pd.DataFrame,
@@ -177,7 +191,7 @@ def retrieve_traits(
         cost_function_values: np.ndarray,
         traits: List[str],
         **kwargs
-    ) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Extracts traits from a lookup-table on results of `inv_img`
 
@@ -200,14 +214,17 @@ def retrieve_traits(
     :param kwargs:
         further key-word arguments to pass to `_retrieve_traits`
     :returns:
-        ``np.ndarray`` of shape `(len(traits), rows, cols)`
-        where rows and columns are given by the shape of lut_idx
+        tuple with 3 arrays. The first item contains a3-d image with
+        trait values with shape (n_traits, nrows, ncols). The second and third
+        item contain the 5 and 95% percentile of the predicted traits across
+        the *n* solutions, respectively. This gives a measure of the
+        variability of the *n* solutions found.
     """
     trait_values = lut[traits].values
-    res_img = _retrieve_traits(
+    res_tuple = _retrieve_traits(
         trait_values=trait_values,
         lut_idxs=lut_idxs,
         cost_function_values=cost_function_values,
         **kwargs
     )
-    return res_img
+    return res_tuple

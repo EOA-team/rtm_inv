@@ -22,16 +22,17 @@ import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+
 class RTMConfig:
     """
-    Radiative transfer model inversion configuration set-up
+    Radiative transfer model inversion configuration set-up.
     """
     def __init__(
-            self,
-            traits: List[str],
-            lut_params: Path,
-            rtm: Optional[str] = 'prosail'
-        ):
+        self,
+        traits: List[str],
+        lut_params: Path,
+        rtm: Optional[str] = 'prosail'
+    ):
         """
         Class Constructor
 
@@ -64,20 +65,21 @@ class RTMConfig:
         def to_dict(self) -> Dict[str, Any]:
             return self.__dict__
 
+
 class LookupTableBasedInversion(RTMConfig):
     """
-    Lookup-table based radiative transfer model inversion set-up
+    Lookup-table based radiative transfer model inversion set-up.
     """
     def __init__(
-            self,
-            n_solutions: int,
-            cost_function: str,
-            lut_size: int,
-            sampling_method: Optional[str] = 'LHS',
-            fpath_srf: Optional[str] = None,
-            remove_invalid_green_peaks: Optional[bool] = True,
-            **kwargs
-        ):
+        self,
+        n_solutions: int,
+        cost_function: str,
+        lut_size: int,
+        sampling_method: Optional[str] = 'LHS',
+        fpath_srf: Optional[str] = None,
+        remove_invalid_green_peaks: Optional[bool] = True,
+        **kwargs
+    ):
         """
         Class constructor
 
@@ -119,7 +121,8 @@ class LookupTableBasedInversion(RTMConfig):
             raise ValueError('The number of solutions must not be negative')
         elif n_solutions > self.lut_size:
             raise ValueError(
-                'The number of solutions must not be greater than the lookup-table size'
+                'The number of solutions must not be greater than the ' +
+                'lookup-table size'
             )
         else:
             self.n_solutions = n_solutions

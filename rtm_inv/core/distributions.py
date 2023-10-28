@@ -17,10 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from __future__ import annotations
+
 import numpy as np
 
 from scipy.stats import truncnorm
-from typing import List, Optional, Union
+from typing import List, Optional
 
 
 class Distributions(object):
@@ -36,11 +38,11 @@ class Distributions(object):
 
     def __init__(
             self,
-            min_value: Union[int,float],
-            max_value: Union[int,float],
-            mean_value: Optional[Union[int,float]] = None,
-            std_value: Optional[Union[int,float]] = None
-        ):
+            min_value: int | float,
+            max_value: int | float,
+            mean_value: Optional[int | float] = None,
+            std_value: Optional[int | float] = None
+    ):
         """
         Creates a new ``Distributions`` class to use for sampling
         RTM parameter values
@@ -69,10 +71,11 @@ class Distributions(object):
         self.mean_value = mean_value
         self.std_value = std_value
 
-    def sample(self,
-               distribution: str,
-               n_samples: int
-            ):
+    def sample(
+            self,
+            distribution: str,
+            n_samples: int
+    ) -> np.ndarray:
         """
         Returns a ``numpy.ndarray`` with RTM parameter samples drawn from
         a specific distribution
@@ -83,6 +86,8 @@ class Distributions(object):
             of distributions currently implemented
         :param n_samples:
             number of samples to draw.
+        :returns:
+            ``numpy.ndarray`` with RTM parameter samples.
         """
         if distribution == 'Uniform':
             return np.random.uniform(
