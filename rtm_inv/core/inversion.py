@@ -93,6 +93,7 @@ def inv_img(
                 elif cost_function == 'mae':
                     delta[idx] = np.sum(np.abs(image_ref - lut[idx, :]))
                 elif cost_function == 'contrast_function':
+                    # TODO: use np.diff
                     delta[idx] = np.sum(
                         -np.log10(lut[idx, :] / image_ref) + lut[idx, :] /
                         image_ref
@@ -162,6 +163,7 @@ def _retrieve_traits(
                 q05_img[:, row, col] = np.nan
                 q95_img[:, row, col] = np.nan
                 continue
+            # TODO: cast to Fortran-styled array to speed up operations?
             trait_vals_n_solutions = trait_values[lut_idxs[:, row, col], :]
             for trait_idx in range(trait_values.shape[1]):
                 if measure == 'MEDIAN':
