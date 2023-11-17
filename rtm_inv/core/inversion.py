@@ -64,10 +64,12 @@ def inv_img(
         in the `lut` in the first tuple element and the corresponding
         cost function values in the second.
     """
+    # TODO: think of memory files and downgrade to int16?
     output_shape = (n_solutions, img.shape[1], img.shape[2])
     # array for storing best matching LUT indices
     lut_idxs = np.zeros(shape=output_shape, dtype='int32')
     # array for storing cost function values (required by some strategies)
+    # TODO: might also float16 do the job?
     cost_function_values = np.zeros(shape=output_shape, dtype='float32')
 
     for row in prange(img.shape[1]):
@@ -82,6 +84,8 @@ def inv_img(
             # cost functions (from EnMap box) implemented in a
             # way Numba can handle them
             # (cannot use keywords in numpy functions)
+            # TODO: float64 is propably an overkill given the lower precision of the other arrays...,
+            # move delta init out of for-loop
             delta = np.zeros(shape=(lut.shape[0],), dtype='float64')
             for idx in range(lut.shape[0]):
                 if cost_function == 'rmse':
@@ -105,6 +109,7 @@ def inv_img(
     return lut_idxs, cost_function_values
 
 
+# TODO: would be nice to get this running in parallel again
 # @njit(cache=True, parallel=True)
 def _retrieve_traits(
         trait_values: np.ndarray,
@@ -143,6 +148,7 @@ def _retrieve_traits(
     n_solutions, rows, cols = lut_idxs.shape
     # allocate arrays for storing inversion results
     trait_img_shape = (n_traits, rows, cols)
+    # TODO: downgrade to float32 or even float16?!
     trait_img = np.zeros(trait_img_shape, dtype='float64')
     q05_img = np.zeros(trait_img_shape, dtype='float64')
     q95_img = np.zeros(trait_img_shape, dtype='float64')
